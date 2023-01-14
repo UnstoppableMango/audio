@@ -12,8 +12,7 @@ public class FlacTests
 
         var res = FlacCs.ParseMagic(file);
 
-        Assert.Equal(file.Length - 4, res.Remaining.Length);
-        Assert.Equal("fLaC", res.Result);
+        Assert.Equal("fLaC", res);
     }
 
     [Fact]
@@ -23,8 +22,7 @@ public class FlacTests
 
         var res = FlacCs.ParseMagic(file);
 
-        Assert.Equal(file.Length, res.Remaining.Length);
-        Assert.Null(res.Result);
+        Assert.Null(res);
     }
 
     [Fact]
@@ -35,10 +33,9 @@ public class FlacTests
 
         var res = FlacCs.ParseMetadataBlockHeader(span);
 
-        Assert.Equal(span.Length - 4, res.Remaining.Length);
-        Assert.Equal(34, res.Result.Length);
-        Assert.False(res.Result.LastBlock);
-        Assert.Equal(BlockType.StreamInfo, res.Result.BlockType);
+        Assert.Equal(34, res.Length);
+        Assert.False(res.LastBlock);
+        Assert.Equal(BlockType.StreamInfo, res.BlockType);
     }
 
     [Fact]
@@ -49,10 +46,9 @@ public class FlacTests
 
         var res = FlacCs.ParseMetadataBlockHeader(span);
 
-        Assert.Equal(span.Length - 4, res.Remaining.Length);
-        Assert.Equal(16384, res.Result.Length);
-        Assert.True(res.Result.LastBlock);
-        Assert.Equal(BlockType.Padding, res.Result.BlockType);
+        Assert.Equal(16384, res.Length);
+        Assert.True(res.LastBlock);
+        Assert.Equal(BlockType.Padding, res.BlockType);
     }
 
     [Fact]
@@ -63,10 +59,9 @@ public class FlacTests
 
         var res = FlacCs.ParseMetadataBlockHeader(span);
 
-        Assert.Equal(span.Length - 4, res.Remaining.Length);
-        Assert.Equal(294, res.Result.Length);
-        Assert.False(res.Result.LastBlock);
-        Assert.Equal(BlockType.VorbisComment, res.Result.BlockType);
+        Assert.Equal(294, res.Length);
+        Assert.False(res.LastBlock);
+        Assert.Equal(BlockType.VorbisComment, res.BlockType);
     }
 
     [Fact]
@@ -77,10 +72,9 @@ public class FlacTests
 
         var res = FlacCs.ParseMetadataBlockHeader(span);
 
-        Assert.Equal(span.Length - 4, res.Remaining.Length);
-        Assert.Equal(79_888, res.Result.Length);
-        Assert.False(res.Result.LastBlock);
-        Assert.Equal(BlockType.Picture, res.Result.BlockType);
+        Assert.Equal(79_888, res.Length);
+        Assert.False(res.LastBlock);
+        Assert.Equal(BlockType.Picture, res.BlockType);
     }
 
     [Fact]
@@ -89,10 +83,8 @@ public class FlacTests
         var file = File.ReadAllBytes($"{FileName}.flac");
         var span = new Span<byte>(file)[8..];
 
-        var res = FlacCs.ParseMetadataBlockStreamInfo(span, 34);
-        var streamInfo = res.Result;
+        var streamInfo = FlacCs.ParseMetadataBlockStreamInfo(span);
 
-        Assert.Equal(span.Length - 34, res.Remaining.Length);
         Assert.Equal(4096u, streamInfo.MinBlockSize);
         Assert.Equal(4096u, streamInfo.MaxBlockSize);
         Assert.Equal(1781u, streamInfo.MinFrameSize);
@@ -111,11 +103,9 @@ public class FlacTests
         var span = new Span<byte>(file)[80_528..];
 
         var res = FlacCs.ParseMetadataBlockPadding(span, 16384);
-        var padding = res.Result;
 
-        Assert.Equal(span.Length - 16384, res.Remaining.Length);
-        Assert.NotNull(res.Result);
-        Assert.Equal(16384, padding.Item);
+        Assert.NotNull(res);
+        Assert.Equal(16384, res.Item);
     }
 
     [Fact(Skip = "No test files with application meta")]
@@ -124,10 +114,8 @@ public class FlacTests
         var file = File.ReadAllBytes($"{FileName}.flac");
         var span = new Span<byte>(file)[69_420..];
 
-        var res = FlacCs.ParseMetadataBlockApplication(span, 69);
-        var application = res.Result;
+        var application = FlacCs.ParseMetadataBlockApplication(span, 69);
 
-        Assert.Equal(span.Length - 420, res.Remaining.Length);
         Assert.Equal(69, application.ApplicationId);
         Assert.Equal(420, application.ApplicationData.Length);
     }
@@ -139,9 +127,8 @@ public class FlacTests
         var span = new Span<byte>(file)[46..];
 
         var res = FlacCs.ParseMetadataBlockSeekTable(span, 288);
-        var list = res.Result.Item; // TODO: Do we like this API?
 
-        Assert.Equal(span.Length - 288, res.Remaining.Length);
+        var list = res.Item; // TODO: Do we like this API?
         Assert.Equal(16, list.Length);
 
         var first = list[0];
@@ -172,10 +159,8 @@ public class FlacTests
         var file = File.ReadAllBytes($"{FileName}.flac");
         var span = new Span<byte>(file)[338..];
 
-        var res = FlacCs.ParseMetadataBlockVorbisComment(span, length);
-        var vorbisComment = res.Result;
+        var vorbisComment = FlacCs.ParseMetadataBlockVorbisComment(span, length);
 
-        Assert.Equal(span.Length - length, res.Remaining.Length);
         Assert.NotNull(vorbisComment);
         Assert.Equal(14, vorbisComment.UserComments.Length);
 

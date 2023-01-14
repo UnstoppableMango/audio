@@ -1,28 +1,22 @@
 module Safir.Audio.FlacCs
 
 let ParseMagic f =
-    let res = Flac.pMagic f
-    ParseResultCs(res.Remaining, res.Result |> Option.defaultValue null)
+    Flac.pMagic f |> Option.defaultValue null
 
 let ParseMetadataBlockHeader f =
-    let res = Flac.pMetadataBlockHeader f
-    ParseResultCs(res.Remaining, res.Result |> Option.get)
+    Flac.pMetadataBlockHeader f |> Option.get
 
-let ParseMetadataBlockStreamInfo f l =
-    let res = Flac.pMetadataBlockStreamInfo f l
-    ParseResultCs(res.Remaining, res.Result |> Option.get)
+let ParseMetadataBlockStreamInfo f =
+    Flac.pMetadataBlockStreamInfo f |> Option.get
 
 let ParseMetadataBlockPadding f l =
-    let res = Flac.pMetadataBlockPadding f l
-    ParseResultCs(res.Remaining, res.Result |> Option.get)
+    Flac.pMetadataBlockPadding f l |> Option.get
 
 let ParseMetadataBlockApplication f l =
-    let res = Flac.pMetadataBlockApplication f l
-    ParseResultCs(res.Remaining, res.Result |> Option.get)
+    Flac.pMetadataBlockApplication f l |> Option.get
 
 let ParseMetadataBlockSeekTable f l =
-    let res = Flac.pMetadataBlockSeekTable f l
-    ParseResultCs(res.Remaining, res.Result |> Option.get)
+    Flac.pMetadataBlockSeekTable f l |> Option.get
 
 let private toCsComment =
     function
@@ -44,13 +38,8 @@ let private toCsComment =
     | Other (n, v) -> OtherComment(n, v)
 
 let ParseMetadataBlockVorbisComment f l =
-    let res = Flac.pMetadataBlockVorbisComment f l
-
-    ParseResultCs(
-        res.Remaining,
-        res.Result
-        |> Option.map (fun x ->
-            { VendorString = x.VendorString
-              UserComments = x.UserComments |> List.map toCsComment })
-        |> Option.get
-    )
+    Flac.pMetadataBlockVorbisComment f l
+    |> Option.map (fun x ->
+        { VendorString = x.VendorString
+          UserComments = x.UserComments |> List.map toCsComment })
+    |> Option.get
