@@ -160,6 +160,7 @@ let pCueSheetTrack (f: ReadOnlySpan<byte>) =
           TrackIndexPoints = ctis }
         |> Some
 
+// TODO
 let pMetadataBlockCueSheet (f: ReadOnlySpan<byte>) (length: int) = None
 
 let pMetadataBlockData (f: ReadOnlySpan<byte>) (length: int) =
@@ -169,3 +170,48 @@ let pMetadataBlockData (f: ReadOnlySpan<byte>) (length: int) =
     | BlockType.SeekTable -> Option.map SeekTable (pMetadataBlockSeekTable f length)
     | BlockType.VorbisComment -> Option.map VorbisComment (pMetadataBlockVorbisComment f length)
     | _ -> None
+
+let pMetadataBlock (f: ReadOnlySpan<byte>) =
+    match pMetadataBlockHeader f with
+    | Some header ->
+        pMetadataBlockData (f.Slice(4)) header.Length header.BlockType
+        |> Option.map (fun d -> { Header = header; Data = d })
+    | None -> None
+
+let pMetadataBlocks (f: ReadOnlySpan<byte>) =
+    let mutable blocks = List.empty
+    let mutable cont = true
+    let mutable offset = 0
+
+    while cont do
+        let block = pMetadataBlock (f.Slice(offset))
+
+        blocks <- block :: blocks
+
+        block |> Option.iter (fun x -> offset <- offset + x.Header.Length + 4)
+
+        cont <-
+            block
+            |> Option.map (fun x -> not x.Header.LastBlock)
+            |> Option.defaultValue false
+
+    blocks |> List.sequenceOptionM
+
+let pFlacStream (f: ReadOnlySpan<byte>) =
+    let magic = pMagic f
+
+    let isStreamInfo x =
+        x.Header.BlockType = BlockType.StreamInfo
+
+    let streamInfo =
+        match magic with
+        | Some _ -> pMetadataBlock (f.Slice(4))
+        | None -> None
+        |> Option.filter isStreamInfo
+
+    let blocks =
+        match streamInfo with
+        | Some x -> pMetadataBlocks (f.Slice(x.Header.Length + 8))
+        | None -> None
+
+    blocks |> Option.map (fun x -> { Metadata = x })

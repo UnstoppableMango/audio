@@ -113,9 +113,7 @@ type MetadataBlockVorbisComment<'a> =
 
     interface IMetadataBlockData
 
-type CueSheetTrackIndex =
-    { Offset: uint64
-      IndexPoint: uint16 }
+type CueSheetTrackIndex = { Offset: uint64; IndexPoint: uint16 }
 
 type CueSheetTrack =
     { Offset: uint64
@@ -141,3 +139,15 @@ type MetadataBlockData =
     | Application of MetadataBlockApplication
     | SeekTable of MetadataBlockSeekTable
     | VorbisComment of MetadataBlockVorbisComment<VorbisComment>
+
+type MetadataBlockCs =
+    { Header: MetadataBlockHeader
+      Data: IMetadataBlockData }
+
+type MetadataBlock =
+    { Header: MetadataBlockHeader
+      Data: MetadataBlockData }
+
+type FlacStreamCs = { Metadata: MetadataBlockCs seq }
+
+type FlacStream = { Metadata: MetadataBlock list }

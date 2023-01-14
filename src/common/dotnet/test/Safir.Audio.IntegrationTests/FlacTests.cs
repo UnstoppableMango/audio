@@ -212,4 +212,14 @@ public class FlacTests
         Assert.Equal("BARCODE", barcode.Name);
         Assert.Equal("859723487007", barcode.Value);
     }
+
+    [Fact]
+    public void ParseFlacStream_FlacFile()
+    {
+        var file = File.ReadAllBytes($"{FileName}.flac");
+
+        var res = FlacCs.ParseFlacStream(file);
+
+        Assert.NotEmpty(res.Metadata);
+    }
 }
