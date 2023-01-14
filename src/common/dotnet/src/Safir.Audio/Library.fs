@@ -1,5 +1,10 @@
 ﻿namespace Safir.Audio
 
-module Say =
-    let hello name =
-        printfn "Hello %s" name
+module Option =
+    let apply fOpt xOpt =
+        match fOpt,xOpt with
+        | Some f, Some x -> Some (f x)
+        | _ -> None
+
+    let (<!>) = Option.map
+    let (<*>) = apply
