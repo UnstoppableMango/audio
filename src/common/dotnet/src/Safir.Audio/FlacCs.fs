@@ -1,5 +1,13 @@
 module Safir.Audio.FlacCs
 
+let private upcastBlockData =
+    function
+    | StreamInfo x -> x :> IMetadataBlockData
+    | Padding x -> x
+    | Application x -> x
+    | SeekTable x -> x
+    | VorbisComment x -> x
+
 let ParseMagic f =
     Flac.pMagic f |> Option.defaultValue null
 
@@ -43,3 +51,13 @@ let ParseMetadataBlockVorbisComment f l =
         { VendorString = x.VendorString
           UserComments = x.UserComments |> List.map toCsComment })
     |> Option.get
+
+let private toCsMetadataBlock block : MetadataBlockCs =
+    { Header = block.Header
+      Data = upcastBlockData block.Data }
+
+let private toCsFlacStream stream : FlacStreamCs =
+    { Metadata = stream.Metadata |> Seq.map toCsMetadataBlock }
+
+let ParseFlacStream f =
+    Flac.pFlacStream f |> Option.map toCsFlacStream |> Option.get
