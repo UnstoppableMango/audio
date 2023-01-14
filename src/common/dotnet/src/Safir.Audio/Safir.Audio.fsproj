@@ -2,11 +2,17 @@
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="packages.lock.json" />
     <Compile Include="Library.fs" />
+    <Compile Include="Parse.fs" />
+    <Compile Include="VorbisTypes.fs" />
+    <Compile Include="Vorbis.fs" />
+    <Compile Include="FlacTypes.fs" />
+    <Compile Include="Flac.fs" />
+    <Compile Include="FlacCs.fs" />
   </ItemGroup>
 
 </Project>
