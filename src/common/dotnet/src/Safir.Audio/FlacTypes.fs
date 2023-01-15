@@ -15,10 +15,6 @@ type MetadataBlockHeader =
       BlockType: BlockType
       Length: int }
 
-type IMetadataBlockData =
-    interface
-    end
-
 type MetadataBlockStreamInfo =
     { MinBlockSize: uint16
       MaxBlockSize: uint16
@@ -30,18 +26,12 @@ type MetadataBlockStreamInfo =
       TotalSamples: uint64
       Md5Signature: string }
 
-    interface IMetadataBlockData
-
 type MetadataBlockPadding =
     | MetadataBlockPadding of int
-
-    interface IMetadataBlockData
 
 type MetadataBlockApplication =
     { ApplicationId: int
       ApplicationData: byte [] }
-
-    interface IMetadataBlockData
 
 // TODO: How to define placeholder seek points?
 type SeekPoint =
@@ -52,66 +42,9 @@ type SeekPoint =
 type MetadataBlockSeekTable =
     | MetadataBlockSeekTable of SeekPoint list
 
-    interface IMetadataBlockData
-
-[<AbstractClass>]
-type VorbisCommentCs(name: string, value: string) =
-    member this.Name = name
-    member this.Value = value
-
-type TitleComment(value: string) =
-    inherit VorbisCommentCs("TITLE", value)
-
-type VersionComment(value: string) =
-    inherit VorbisCommentCs("VERSION", value)
-
-type AlbumComment(value: string) =
-    inherit VorbisCommentCs("ALBUM", value)
-
-type TrackNumberComment(value: string) =
-    inherit VorbisCommentCs("TRACKNUMBER", value)
-
-type ArtistComment(value: string) =
-    inherit VorbisCommentCs("ARTIST", value)
-
-type PerformerComment(value: string) =
-    inherit VorbisCommentCs("PERFORMER", value)
-
-type CopyrightComment(value: string) =
-    inherit VorbisCommentCs("COPYRIGHT", value)
-
-type LicenseComment(value: string) =
-    inherit VorbisCommentCs("LICENSE", value)
-
-type OrganizationComment(value: string) =
-    inherit VorbisCommentCs("ORGANIZATION", value)
-
-type DescriptionComment(value: string) =
-    inherit VorbisCommentCs("DESCRIPTION", value)
-
-type GenreComment(value: string) =
-    inherit VorbisCommentCs("GENRE", value)
-
-type DateComment(value: string) =
-    inherit VorbisCommentCs("DATE", value)
-
-type LocationComment(value: string) =
-    inherit VorbisCommentCs("LOCATION", value)
-
-type ContactComment(value: string) =
-    inherit VorbisCommentCs("Contact", value)
-
-type IsrcComment(value: string) =
-    inherit VorbisCommentCs("ISRC", value)
-
-type OtherComment(name: string, value: string) =
-    inherit VorbisCommentCs(name, value)
-
-type MetadataBlockVorbisComment<'a> =
+type MetadataBlockVorbisComment =
     { VendorString: string
-      UserComments: 'a list }
-
-    interface IMetadataBlockData
+      UserComments: VorbisComment list }
 
 type CueSheetTrackIndex = { Offset: uint64; IndexPoint: uint16 }
 
@@ -131,23 +64,15 @@ type MetadataBlockCueSheet =
       TotalTracks: uint16
       Tracks: CueSheetTrack list }
 
-    interface IMetadataBlockData
-
 type MetadataBlockData =
     | StreamInfo of MetadataBlockStreamInfo
     | Padding of MetadataBlockPadding
     | Application of MetadataBlockApplication
     | SeekTable of MetadataBlockSeekTable
-    | VorbisComment of MetadataBlockVorbisComment<VorbisComment>
-
-type MetadataBlockCs =
-    { Header: MetadataBlockHeader
-      Data: IMetadataBlockData }
+    | VorbisComment of MetadataBlockVorbisComment
 
 type MetadataBlock =
     { Header: MetadataBlockHeader
       Data: MetadataBlockData }
-
-type FlacStreamCs = { Metadata: MetadataBlockCs seq }
 
 type FlacStream = { Metadata: MetadataBlock list }

@@ -105,7 +105,7 @@ public class FlacTests
         var res = FlacCs.ParseMetadataBlockPadding(span, 16384);
 
         Assert.NotNull(res);
-        Assert.Equal(16384, res.Item);
+        Assert.Equal(16384, res.Padding);
     }
 
     [Fact(Skip = "No test files with application meta")]
@@ -116,8 +116,8 @@ public class FlacTests
 
         var application = FlacCs.ParseMetadataBlockApplication(span, 69);
 
-        Assert.Equal(69, application.ApplicationId);
-        Assert.Equal(420, application.ApplicationData.Length);
+        Assert.Equal(69, application.Id);
+        Assert.Equal(420, application.Data.Length);
     }
 
     [Fact]
@@ -128,8 +128,8 @@ public class FlacTests
 
         var res = FlacCs.ParseMetadataBlockSeekTable(span, 288);
 
-        var list = res.Item; // TODO: Do we like this API?
-        Assert.Equal(16, list.Length);
+        var list = res.SeekPoints.ToList();
+        Assert.Equal(16, list.Count);
 
         var first = list[0];
         Assert.Equal(0UL, first.SampleNumber);
@@ -162,9 +162,10 @@ public class FlacTests
         var vorbisComment = FlacCs.ParseMetadataBlockVorbisComment(span, length);
 
         Assert.NotNull(vorbisComment);
-        Assert.Equal(14, vorbisComment.UserComments.Length);
 
-        var comments = vorbisComment.UserComments;
+        var comments = vorbisComment.UserComments.ToList();
+        Assert.Equal(14, comments.Count);
+
         var title = Assert.IsType<TitleComment>(comments[0]);
         Assert.Equal("Flirt", title.Value);
 

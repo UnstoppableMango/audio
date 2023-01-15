@@ -9,8 +9,10 @@
     <Compile Include="Library.fs" />
     <Compile Include="VorbisTypes.fs" />
     <Compile Include="Vorbis.fs" />
+    <Compile Include="VorbisCs.fs" />
     <Compile Include="FlacTypes.fs" />
     <Compile Include="Flac.fs" />
+    <Compile Include="FlacCsTypes.fs" />
     <Compile Include="FlacCs.fs" />
   </ItemGroup>
 
