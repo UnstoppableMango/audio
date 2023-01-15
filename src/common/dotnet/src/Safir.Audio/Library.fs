@@ -1,12 +1,12 @@
 ﻿namespace Safir.Audio
 
-module Option =
+module internal Option =
     let apply fOpt xOpt =
         match fOpt, xOpt with
         | Some f, Some x -> Some(f x)
         | _ -> None
 
-module List =
+module internal List =
     let traverseOptionA f list =
         let (<*>) = Option.apply
         let retn = Option.Some
