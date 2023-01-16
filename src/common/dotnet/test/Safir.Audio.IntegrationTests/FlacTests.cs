@@ -222,5 +222,14 @@ public class FlacTests
         var res = FlacCs.ParseFlacStream(file);
 
         Assert.NotEmpty(res.Metadata);
+
+        var metadata = res.Metadata.ToList();
+        Assert.Equal(5, metadata.Count);
+
+        Assert.IsType<MetadataBlockStreamInfoCs>(metadata[0].Data);
+        Assert.IsType<MetadataBlockSeekTableCs>(metadata[1].Data);
+        Assert.IsType<MetadataBlockVorbisCommentCs>(metadata[2].Data);
+        Assert.IsType<MetadataBlockSkippedCs>(metadata[3].Data); // TODO: Picture
+        Assert.IsType<MetadataBlockPaddingCs>(metadata[4].Data);
     }
 }
