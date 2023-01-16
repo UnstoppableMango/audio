@@ -14,15 +14,19 @@ let pMagic (f: ReadOnlySpan<byte>) =
 let pMetadataBlockHeader (f: ReadOnlySpan<byte>) =
     let last = (f[0] &&& 0x80uy) <> 0uy
     let t = int (f[0] &&& 0x7Fuy)
-    let bt = enum<BlockType> t
 
-    let la = [| 0uy; f[1]; f[2]; f[3] |]
-    let length = BinaryPrimitives.ReadInt32BigEndian(la)
+    if t > 127 then
+        None
+    else
+        let bt = enum<BlockType> t
 
-    { LastBlock = last
-      BlockType = bt
-      Length = length }
-    |> Some
+        let la = [| 0uy; f[1]; f[2]; f[3] |]
+        let length = BinaryPrimitives.ReadInt32BigEndian(la)
+
+        { LastBlock = last
+          BlockType = bt
+          Length = length }
+        |> Some
 
 let pMetadataBlockStreamInfo (f: ReadOnlySpan<byte>) =
     if f.Length < 34 then
@@ -175,7 +179,8 @@ let pMetadataBlock (f: ReadOnlySpan<byte>) =
     match pMetadataBlockHeader f with
     | Some header ->
         pMetadataBlockData (f.Slice(4)) header.Length header.BlockType
-        |> Option.map (fun d -> { Header = header; Data = d })
+        |> Option.defaultValue (Skipped(f.Slice(4, header.Length).ToArray()))
+        |> (fun d -> Some { Header = header; Data = d })
     | None -> None
 
 let pMetadataBlocks (f: ReadOnlySpan<byte>) =
@@ -195,7 +200,7 @@ let pMetadataBlocks (f: ReadOnlySpan<byte>) =
             |> Option.map (fun x -> not x.Header.LastBlock)
             |> Option.defaultValue false
 
-    blocks |> List.sequenceOptionM
+    blocks |> List.rev |> List.sequenceOptionM
 
 let pFlacStream (f: ReadOnlySpan<byte>) =
     let magic = pMagic f
@@ -214,4 +219,6 @@ let pFlacStream (f: ReadOnlySpan<byte>) =
         | Some x -> pMetadataBlocks (f.Slice(x.Header.Length + 8))
         | None -> None
 
-    blocks |> Option.map (fun x -> { Metadata = x })
+    blocks
+    |> Option.map2 (fun s b -> s :: b) streamInfo
+    |> Option.map (fun x -> { Metadata = x })

@@ -43,6 +43,10 @@ type MetadataBlockVorbisCommentCs(vorbisComment: MetadataBlockVorbisComment) =
     member this.UserComments =
         vorbisComment.UserComments |> List.map VorbisCs.toCsComment |> List.toSeq
 
+type MetadataBlockSkippedCs(block: byte []) =
+    inherit MetadataBlockDataCs()
+    member this.Block = block
+
 type MetadataBlockCs(block: MetadataBlock) =
     member this.Header = block.Header
 
@@ -53,6 +57,7 @@ type MetadataBlockCs(block: MetadataBlock) =
         | Application x -> MetadataBlockApplicationCs(x)
         | SeekTable x -> MetadataBlockSeekTableCs(x)
         | VorbisComment x -> MetadataBlockVorbisCommentCs(x)
+        | Skipped x -> MetadataBlockSkippedCs(x)
 
 type FlacStreamCs(stream: FlacStream) =
-    member this.Metadata = stream.Metadata |> List.toSeq
+    member this.Metadata = stream.Metadata |> List.map MetadataBlockCs |> List.toSeq

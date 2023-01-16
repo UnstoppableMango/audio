@@ -70,6 +70,7 @@ type MetadataBlockData =
     | Application of MetadataBlockApplication
     | SeekTable of MetadataBlockSeekTable
     | VorbisComment of MetadataBlockVorbisComment
+    | Skipped of byte[]
 
 type MetadataBlock =
     { Header: MetadataBlockHeader
