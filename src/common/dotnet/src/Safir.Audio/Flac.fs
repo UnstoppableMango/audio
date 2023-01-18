@@ -11,12 +11,12 @@ let private magic = [| 0x66uy; 0x4Cuy; 0x61uy; 0x43uy |]
 let private minBlockSize = 15
 let private maxBlockSize = 65535
 
-let pMagic (f: ReadOnlySpan<byte>) =
+let readMagic (f: ReadOnlySpan<byte>) =
     let n = f.Slice(0, 4)
 
     if n.SequenceEqual(magic) then Some "fLaC" else None
 
-let pMetadataBlockHeader (f: ReadOnlySpan<byte>) =
+let readMetadataBlockHeader (f: ReadOnlySpan<byte>) =
     let last = (f[0] &&& 0x80uy) <> 0uy
     let t = int (f[0] &&& 0x7Fuy)
 
@@ -33,7 +33,7 @@ let pMetadataBlockHeader (f: ReadOnlySpan<byte>) =
           Length = length }
         |> Some
 
-let pMetadataBlockStreamInfo (f: ReadOnlySpan<byte>) =
+let readMetadataBlockStreamInfo (f: ReadOnlySpan<byte>) =
     if f.Length < 34 then
         None
     else
@@ -73,13 +73,13 @@ let pMetadataBlockStreamInfo (f: ReadOnlySpan<byte>) =
           Md5Signature = md5 }
         |> Some
 
-let pMetadataBlockPadding (f: ReadOnlySpan<byte>) (length: int) =
+let readMetadataBlockPadding (f: ReadOnlySpan<byte>) (length: int) =
     if length % 8 = 0 && f.Slice(0, length).IndexOfAnyExcept(0uy) = -1 then
         MetadataBlockPadding length |> Some
     else
         None
 
-let pMetadataBlockApplication (f: ReadOnlySpan<byte>) (length: int) =
+let readMetadataBlockApplication (f: ReadOnlySpan<byte>) (length: int) =
     let dataLength = length - 4
 
     if dataLength % 8 = 0 then
@@ -92,7 +92,7 @@ let pMetadataBlockApplication (f: ReadOnlySpan<byte>) (length: int) =
     else
         None
 
-let pSeekPoint (f: ReadOnlySpan<byte>) =
+let readSeekPoint (f: ReadOnlySpan<byte>) =
     if f.Length < 18 then
         None
     else
@@ -101,18 +101,18 @@ let pSeekPoint (f: ReadOnlySpan<byte>) =
           FrameSamples = BinaryPrimitives.ReadUInt16BigEndian(f.Slice(16, 2)) }
         |> Some
 
-let pMetadataBlockSeekTable (f: ReadOnlySpan<byte>) (length: int) =
+let readMetadataBlockSeekTable (f: ReadOnlySpan<byte>) (length: int) =
     if length % 18 <> 0 then
         None
     else
         let mutable ts = List.Empty
 
         for i = (length / 18) - 1 downto 0 do
-            ts <- pSeekPoint (f.Slice(i * 18, 18)) :: ts
+            ts <- readSeekPoint (f.Slice(i * 18, 18)) :: ts
 
         ts |> List.sequenceOptionM |> Option.map MetadataBlockSeekTable
 
-let pMetadataBlockVorbisComment (f: ReadOnlySpan<byte>) (length: int) =
+let readMetadataBlockVorbisComment (f: ReadOnlySpan<byte>) (length: int) =
     if int64 length >= (pown 2L 24) - 1L then
         None
     else
@@ -121,7 +121,7 @@ let pMetadataBlockVorbisComment (f: ReadOnlySpan<byte>) (length: int) =
             { VendorString = x.VendorString
               UserComments = x.UserComments })
 
-let pCueSheetTrackIndex (f: ReadOnlySpan<byte>) =
+let readCueSheetTrackIndex (f: ReadOnlySpan<byte>) =
     let o = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
 
     let ipna = [| 0uy; f[8] |]
@@ -132,7 +132,7 @@ let pCueSheetTrackIndex (f: ReadOnlySpan<byte>) =
     else
         Some { Offset = o; IndexPoint = ipn }
 
-let pCueSheetTrack (f: ReadOnlySpan<byte>) =
+let readCueSheetTrack (f: ReadOnlySpan<byte>) =
     let o = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
 
     let ta = [| 0uy; f[8] |]
@@ -170,9 +170,9 @@ let pCueSheetTrack (f: ReadOnlySpan<byte>) =
         |> Some
 
 // TODO
-let pMetadataBlockCueSheet (f: ReadOnlySpan<byte>) (length: int) = None
+let readMetadataBlockCueSheet (f: ReadOnlySpan<byte>) (length: int) = None
 
-let pMetadataBlockPicture (f: ReadOnlySpan<byte>) (length: int) =
+let readMetadataBlockPicture (f: ReadOnlySpan<byte>) (length: int) =
     if f.Length < length then
         None
     else
@@ -226,32 +226,32 @@ let pMetadataBlockPicture (f: ReadOnlySpan<byte>) (length: int) =
           Data = pd }
         |> Some
 
-let pMetadataBlockData (f: ReadOnlySpan<byte>) (length: int) =
+let readMetadataBlockData (f: ReadOnlySpan<byte>) (length: int) =
     function
-    | BlockType.StreamInfo -> Option.map StreamInfo (pMetadataBlockStreamInfo f)
-    | BlockType.Padding -> Option.map Padding (pMetadataBlockPadding f length)
-    | BlockType.SeekTable -> Option.map SeekTable (pMetadataBlockSeekTable f length)
-    | BlockType.VorbisComment -> Option.map VorbisComment (pMetadataBlockVorbisComment f length)
-    | BlockType.CueSheet -> Option.map CueSheet (pMetadataBlockCueSheet f length)
-    | BlockType.Picture -> Option.map Picture (pMetadataBlockPicture f length)
+    | BlockType.StreamInfo -> Option.map StreamInfo (readMetadataBlockStreamInfo f)
+    | BlockType.Padding -> Option.map Padding (readMetadataBlockPadding f length)
+    | BlockType.SeekTable -> Option.map SeekTable (readMetadataBlockSeekTable f length)
+    | BlockType.VorbisComment -> Option.map VorbisComment (readMetadataBlockVorbisComment f length)
+    | BlockType.CueSheet -> Option.map CueSheet (readMetadataBlockCueSheet f length)
+    | BlockType.Picture -> Option.map Picture (readMetadataBlockPicture f length)
     | BlockType.Invalid -> None
     | _ -> Some(Skipped(f.Slice(0, length).ToArray()))
 
-let pMetadataBlock (f: ReadOnlySpan<byte>) =
-    match pMetadataBlockHeader f with
+let readMetadataBlock (f: ReadOnlySpan<byte>) =
+    match readMetadataBlockHeader f with
     | Some header ->
-        pMetadataBlockData (f.Slice(4)) header.Length header.BlockType
+        readMetadataBlockData (f.Slice(4)) header.Length header.BlockType
         |> Option.defaultValue (Skipped(f.Slice(4, header.Length).ToArray()))
         |> (fun d -> Some { Header = header; Data = d })
     | None -> None
 
-let pMetadataBlocks (f: ReadOnlySpan<byte>) =
+let readMetadataBlocks (f: ReadOnlySpan<byte>) =
     let mutable blocks = List.empty
     let mutable cont = true
     let mutable offset = 0
 
     while cont do
-        let block = pMetadataBlock (f.Slice(offset))
+        let block = readMetadataBlock (f.Slice(offset))
 
         blocks <- block :: blocks
 
@@ -264,21 +264,21 @@ let pMetadataBlocks (f: ReadOnlySpan<byte>) =
 
     blocks |> List.rev |> List.sequenceOptionM
 
-let pFlacStream (f: ReadOnlySpan<byte>) =
-    let magic = pMagic f
+let readFlacStream (f: ReadOnlySpan<byte>) =
+    let magic = readMagic f
 
     let isStreamInfo x =
         x.Header.BlockType = BlockType.StreamInfo
 
     let streamInfo =
         match magic with
-        | Some _ -> pMetadataBlock (f.Slice(4))
+        | Some _ -> readMetadataBlock (f.Slice(4))
         | None -> None
         |> Option.filter isStreamInfo
 
     let blocks =
         match streamInfo with
-        | Some x -> pMetadataBlocks (f.Slice(x.Header.Length + 8))
+        | Some x -> readMetadataBlocks (f.Slice(x.Header.Length + 8))
         | None -> None
 
     blocks

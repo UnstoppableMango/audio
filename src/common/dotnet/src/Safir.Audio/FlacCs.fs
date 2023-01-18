@@ -1,40 +1,40 @@
 module Safir.Audio.FlacCs
 
-let ParseMagic f =
-    Flac.pMagic f |> Option.defaultValue null
+let ReadMagic f =
+    Flac.readMagic f |> Option.defaultValue null
 
-let ParseMetadataBlockHeader f =
-    Flac.pMetadataBlockHeader f |> Option.get
+let ReadMetadataBlockHeader f =
+    Flac.readMetadataBlockHeader f |> Option.get
 
-let ParseMetadataBlockStreamInfo f =
-    Flac.pMetadataBlockStreamInfo f
+let ReadMetadataBlockStreamInfo f =
+    Flac.readMetadataBlockStreamInfo f
     |> Option.map MetadataBlockStreamInfoCs
     |> Option.get
 
-let ParseMetadataBlockPadding f l =
-    Flac.pMetadataBlockPadding f l
+let ReadMetadataBlockPadding f l =
+    Flac.readMetadataBlockPadding f l
     |> Option.map MetadataBlockPaddingCs
     |> Option.get
 
-let ParseMetadataBlockApplication f l =
-    Flac.pMetadataBlockApplication f l
+let ReadMetadataBlockApplication f l =
+    Flac.readMetadataBlockApplication f l
     |> Option.map MetadataBlockApplicationCs
     |> Option.get
 
-let ParseMetadataBlockSeekTable f l =
-    Flac.pMetadataBlockSeekTable f l
+let ReadMetadataBlockSeekTable f l =
+    Flac.readMetadataBlockSeekTable f l
     |> Option.map MetadataBlockSeekTableCs
     |> Option.get
 
-let ParseMetadataBlockVorbisComment f l =
-    Flac.pMetadataBlockVorbisComment f l
+let ReadMetadataBlockVorbisComment f l =
+    Flac.readMetadataBlockVorbisComment f l
     |> Option.map MetadataBlockVorbisCommentCs
     |> Option.get
 
-let ParseMetadataBlockPicture f l =
-    Flac.pMetadataBlockPicture f l
+let ReadMetadataBlockPicture f l =
+    Flac.readMetadataBlockPicture f l
     |> Option.map MetadataBlockPictureCs
     |> Option.get
 
-let ParseFlacStream f =
-    Flac.pFlacStream f |> Option.map FlacStreamCs |> Option.get
+let ReadFlacStream f =
+    Flac.readFlacStream f |> Option.map FlacStreamCs |> Option.get
