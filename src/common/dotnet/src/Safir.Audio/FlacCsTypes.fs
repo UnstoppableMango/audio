@@ -43,6 +43,23 @@ type MetadataBlockVorbisCommentCs(vorbisComment: MetadataBlockVorbisComment) =
     member this.UserComments =
         vorbisComment.UserComments |> List.map VorbisCs.toCsComment |> List.toSeq
 
+type MetadataBlockCueSheetCs(cueSheet: MetadataBlockCueSheet) =
+    inherit MetadataBlockDataCs()
+
+type MetadataBlockPictureCs(picture: MetadataBlockPicture) =
+    inherit MetadataBlockDataCs()
+    member this.Type = picture.Type
+    member this.MimeLength = picture.MimeLength
+    member this.MimeType = picture.MimeType
+    member this.DescriptionLength = picture.DescriptionLength
+    member this.Description = picture.Description
+    member this.Width = picture.Width
+    member this.Height = picture.Height
+    member this.Depth = picture.Depth
+    member this.Colors = picture.Colors
+    member this.DataLength = picture.DataLength
+    member this.Data = picture.Data
+
 type MetadataBlockSkippedCs(block: byte []) =
     inherit MetadataBlockDataCs()
     member this.Block = block
@@ -57,6 +74,8 @@ type MetadataBlockCs(block: MetadataBlock) =
         | Application x -> MetadataBlockApplicationCs(x)
         | SeekTable x -> MetadataBlockSeekTableCs(x)
         | VorbisComment x -> MetadataBlockVorbisCommentCs(x)
+        | CueSheet x -> MetadataBlockCueSheetCs(x)
+        | Picture x -> MetadataBlockPictureCs(x)
         | Skipped x -> MetadataBlockSkippedCs(x)
 
 type FlacStreamCs(stream: FlacStream) =
