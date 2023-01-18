@@ -28,10 +28,9 @@ public class FlacTests
     [Fact]
     public void ParseMetadataBlockHeader_StreamInfo()
     {
-        var file = File.ReadAllBytes($"{FileName}.flac");
-        var span = new Span<byte>(file)[4..];
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
-        var res = FlacCs.ParseMetadataBlockHeader(span);
+        var res = FlacCs.ParseMetadataBlockHeader(file[4..]);
 
         Assert.Equal(34, res.Length);
         Assert.False(res.LastBlock);
@@ -41,23 +40,32 @@ public class FlacTests
     [Fact]
     public void ParseMetadataBlockHeader_Padding()
     {
-        var file = File.ReadAllBytes($"{FileName}.flac");
-        var span = new Span<byte>(file)[80_524..];
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
-        var res = FlacCs.ParseMetadataBlockHeader(span);
+        var res = FlacCs.ParseMetadataBlockHeader(file[80_524..]);
 
         Assert.Equal(16384, res.Length);
         Assert.True(res.LastBlock);
         Assert.Equal(BlockType.Padding, res.BlockType);
     }
 
+    [Fact(Skip = "No test files with application meta")]
+    public void ParseMetadataBlockHeader_Application()
+    {
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+
+        var application = FlacCs.ParseMetadataBlockApplication(file[69_420..], 69);
+
+        Assert.Equal(69, application.Id);
+        Assert.Equal(420, application.Data.Length);
+    }
+
     [Fact]
     public void ParseMetadataBlockHeader_VorbisComment()
     {
-        var file = File.ReadAllBytes($"{FileName}.flac");
-        var span = new Span<byte>(file)[334..];
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
-        var res = FlacCs.ParseMetadataBlockHeader(span);
+        var res = FlacCs.ParseMetadataBlockHeader(file[334..]);
 
         Assert.Equal(294, res.Length);
         Assert.False(res.LastBlock);
@@ -67,10 +75,9 @@ public class FlacTests
     [Fact]
     public void ParseMetadataBlockHeader_Picture()
     {
-        var file = File.ReadAllBytes($"{FileName}.flac");
-        var span = new Span<byte>(file)[632..];
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
-        var res = FlacCs.ParseMetadataBlockHeader(span);
+        var res = FlacCs.ParseMetadataBlockHeader(file[632..]);
 
         Assert.Equal(79_888, res.Length);
         Assert.False(res.LastBlock);
@@ -80,10 +87,9 @@ public class FlacTests
     [Fact]
     public void ParseMetadataBlockStreamInfo()
     {
-        var file = File.ReadAllBytes($"{FileName}.flac");
-        var span = new Span<byte>(file)[8..];
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
-        var streamInfo = FlacCs.ParseMetadataBlockStreamInfo(span);
+        var streamInfo = FlacCs.ParseMetadataBlockStreamInfo(file[8..]);
 
         Assert.Equal(4096u, streamInfo.MinBlockSize);
         Assert.Equal(4096u, streamInfo.MaxBlockSize);
@@ -99,34 +105,20 @@ public class FlacTests
     [Fact]
     public void ParseMetadataBlockPadding()
     {
-        var file = File.ReadAllBytes($"{FileName}.flac");
-        var span = new Span<byte>(file)[80_528..];
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
-        var res = FlacCs.ParseMetadataBlockPadding(span, 16384);
+        var res = FlacCs.ParseMetadataBlockPadding(file[80_528..], 16384);
 
         Assert.NotNull(res);
         Assert.Equal(16384, res.Padding);
     }
 
-    [Fact(Skip = "No test files with application meta")]
-    public void ParseMetadataBlockHeader_Application()
-    {
-        var file = File.ReadAllBytes($"{FileName}.flac");
-        var span = new Span<byte>(file)[69_420..];
-
-        var application = FlacCs.ParseMetadataBlockApplication(span, 69);
-
-        Assert.Equal(69, application.Id);
-        Assert.Equal(420, application.Data.Length);
-    }
-
     [Fact]
     public void ParseMetadataBlockSeekTable()
     {
-        var file = File.ReadAllBytes($"{FileName}.flac");
-        var span = new Span<byte>(file)[46..];
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
-        var res = FlacCs.ParseMetadataBlockSeekTable(span, 288);
+        var res = FlacCs.ParseMetadataBlockSeekTable(file[46..], 288);
 
         var list = res.SeekPoints.ToList();
         Assert.Equal(16, list.Count);
@@ -155,11 +147,9 @@ public class FlacTests
     [Fact]
     public void ParseMetadataBlockVorbisComment()
     {
-        const int length = 294;
-        var file = File.ReadAllBytes($"{FileName}.flac");
-        var span = new Span<byte>(file)[338..];
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
-        var vorbisComment = FlacCs.ParseMetadataBlockVorbisComment(span, length);
+        var vorbisComment = FlacCs.ParseMetadataBlockVorbisComment(file[338..], 294);
 
         Assert.NotNull(vorbisComment);
 
@@ -215,9 +205,27 @@ public class FlacTests
     }
 
     [Fact]
+    public void ParseMetadataBlockPicture()
+    {
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+
+        var picture = FlacCs.ParseMetadataBlockPicture(file[636..], 79_888);
+
+        Assert.Equal(PictureType.FrontCover, picture.Type);
+        Assert.Equal("image/jpeg", picture.MimeType);
+        Assert.Equal(string.Empty, picture.Description);
+        Assert.Equal(800u, picture.Width);
+        Assert.Equal(800u, picture.Height);
+        Assert.Equal(24u, picture.Depth);
+        Assert.Equal(0u, picture.Colors);
+        Assert.Equal(79_846u, picture.DataLength);
+        Assert.Equal(79_846, picture.Data.Length);
+    }
+
+    [Fact]
     public void ParseFlacStream_FlacFile()
     {
-        var file = File.ReadAllBytes($"{FileName}.flac");
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var res = FlacCs.ParseFlacStream(file);
 

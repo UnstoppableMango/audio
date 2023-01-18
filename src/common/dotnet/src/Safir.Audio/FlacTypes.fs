@@ -26,8 +26,7 @@ type MetadataBlockStreamInfo =
       TotalSamples: uint64
       Md5Signature: string }
 
-type MetadataBlockPadding =
-    | MetadataBlockPadding of int
+type MetadataBlockPadding = MetadataBlockPadding of int
 
 type MetadataBlockApplication =
     { ApplicationId: int
@@ -39,8 +38,7 @@ type SeekPoint =
       StreamOffset: uint64
       FrameSamples: uint16 }
 
-type MetadataBlockSeekTable =
-    | MetadataBlockSeekTable of SeekPoint list
+type MetadataBlockSeekTable = MetadataBlockSeekTable of SeekPoint list
 
 type MetadataBlockVorbisComment =
     { VendorString: string
@@ -64,13 +62,51 @@ type MetadataBlockCueSheet =
       TotalTracks: uint16
       Tracks: CueSheetTrack list }
 
+type PictureType =
+    | Other = 0
+    | StandardFileIcon = 1
+    | OtherFileIcon = 2
+    | FrontCover = 3
+    | BackCover = 4
+    | LeafletPage = 5
+    | Media = 6
+    | LeadArtist = 7
+    | Artist = 8
+    | Conductor = 9
+    | Band = 10
+    | Composer = 11
+    | Lyricist = 12
+    | RecordingLocation = 13
+    | DuringRecording = 14
+    | DuringPerformance = 15
+    | VideoScreenCapture = 16
+    | ABrightColouredFish = 17
+    | Illustration = 18
+    | ArtistLogoType = 19
+    | PublisherLogoType = 20
+
+type MetadataBlockPicture =
+    { Type: PictureType
+      MimeLength: uint32
+      MimeType: string
+      DescriptionLength: uint32
+      Description: string
+      Width: uint32
+      Height: uint32
+      Depth: uint32
+      Colors: uint32
+      DataLength: uint32
+      Data: byte [] }
+
 type MetadataBlockData =
     | StreamInfo of MetadataBlockStreamInfo
     | Padding of MetadataBlockPadding
     | Application of MetadataBlockApplication
     | SeekTable of MetadataBlockSeekTable
     | VorbisComment of MetadataBlockVorbisComment
-    | Skipped of byte[]
+    | CueSheet of MetadataBlockCueSheet
+    | Picture of MetadataBlockPicture
+    | Skipped of byte []
 
 type MetadataBlock =
     { Header: MetadataBlockHeader

@@ -6,6 +6,11 @@ open System.Text
 
 let private magic = [| 0x66uy; 0x4Cuy; 0x61uy; 0x43uy |]
 
+// TODO: Use these min/max block sizes for validation/whatever
+// https://xiph.org/flac/format.html#metadata_block_streaminfo
+let private minBlockSize = 15
+let private maxBlockSize = 65535
+
 let pMagic (f: ReadOnlySpan<byte>) =
     let n = f.Slice(0, 4)
 
@@ -167,13 +172,70 @@ let pCueSheetTrack (f: ReadOnlySpan<byte>) =
 // TODO
 let pMetadataBlockCueSheet (f: ReadOnlySpan<byte>) (length: int) = None
 
+let pMetadataBlockPicture (f: ReadOnlySpan<byte>) (length: int) =
+    if f.Length < length then
+        None
+    else
+        let mutable o = 0
+
+        let tb = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(0, 4)) |> int
+        let t = enum<PictureType> tb
+        o <- o + 4
+
+        let ml = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+        o <- o + 4
+
+        let mli = ml |> int
+        let mt = Encoding.ASCII.GetString(f.Slice(o, mli))
+        o <- o + mli
+
+        let dl = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+        o <- o + 4
+
+        let dli = dl |> int
+        let ds = Encoding.UTF8.GetString(f.Slice(o, dli))
+        o <- o + dli
+
+        let w = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+        o <- o + 4
+
+        let h = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+        o <- o + 4
+
+        let d = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+        o <- o + 4
+
+        let c = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+        o <- o + 4
+
+        let pdl = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+
+        let pdli = pdl |> int
+        let pd = f.Slice(o, pdli).ToArray()
+
+        { Type = t
+          MimeLength = ml
+          MimeType = mt
+          DescriptionLength = dl
+          Description = ds
+          Width = w
+          Height = h
+          Depth = d
+          Colors = c
+          DataLength = pdl
+          Data = pd }
+        |> Some
+
 let pMetadataBlockData (f: ReadOnlySpan<byte>) (length: int) =
     function
     | BlockType.StreamInfo -> Option.map StreamInfo (pMetadataBlockStreamInfo f)
     | BlockType.Padding -> Option.map Padding (pMetadataBlockPadding f length)
     | BlockType.SeekTable -> Option.map SeekTable (pMetadataBlockSeekTable f length)
     | BlockType.VorbisComment -> Option.map VorbisComment (pMetadataBlockVorbisComment f length)
-    | _ -> None
+    | BlockType.CueSheet -> Option.map CueSheet (pMetadataBlockCueSheet f length)
+    | BlockType.Picture -> Option.map Picture (pMetadataBlockPicture f length)
+    | BlockType.Invalid -> None
+    | _ -> Some(Skipped(f.Slice(0, length).ToArray()))
 
 let pMetadataBlock (f: ReadOnlySpan<byte>) =
     match pMetadataBlockHeader f with

@@ -31,5 +31,10 @@ let ParseMetadataBlockVorbisComment f l =
     |> Option.map MetadataBlockVorbisCommentCs
     |> Option.get
 
+let ParseMetadataBlockPicture f l =
+    Flac.pMetadataBlockPicture f l
+    |> Option.map MetadataBlockPictureCs
+    |> Option.get
+
 let ParseFlacStream f =
     Flac.pFlacStream f |> Option.map FlacStreamCs |> Option.get
