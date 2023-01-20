@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Safir.Audio.IntegrationTests;
 
 [Trait("Category", "Unit")]
@@ -12,7 +14,7 @@ public class FlacTests
 
         var res = FlacCs.ReadMagic(file);
 
-        Assert.Equal("fLaC", res);
+        Assert.Equal("fLaC", Encoding.ASCII.GetString(res));
     }
 
     [Fact]
@@ -20,15 +22,13 @@ public class FlacTests
     {
         var file = File.ReadAllBytes($"{FileName}.mp3");
 
-        var res = FlacCs.ReadMagic(file);
-
-        Assert.Null(res);
+        Assert.Throws<InvalidOperationException>(() => FlacCs.ReadMagic(file));
     }
 
     [Fact]
     public void ReadMetadataBlockHeader_StreamInfo()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var res = FlacCs.ReadMetadataBlockHeader(file[4..]);
 
@@ -40,7 +40,7 @@ public class FlacTests
     [Fact]
     public void ReadMetadataBlockHeader_Padding()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var res = FlacCs.ReadMetadataBlockHeader(file[80_524..]);
 
@@ -52,7 +52,7 @@ public class FlacTests
     [Fact(Skip = "No test files with application meta")]
     public void ReadMetadataBlockHeader_Application()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var application = FlacCs.ReadMetadataBlockApplication(file[69_420..], 69);
 
@@ -63,7 +63,7 @@ public class FlacTests
     [Fact]
     public void ReadMetadataBlockHeader_SeekTable()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var res = FlacCs.ReadMetadataBlockHeader(file[42..]);
 
@@ -75,7 +75,7 @@ public class FlacTests
     [Fact]
     public void ReadMetadataBlockHeader_VorbisComment()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var res = FlacCs.ReadMetadataBlockHeader(file[334..]);
 
@@ -87,7 +87,7 @@ public class FlacTests
     [Fact]
     public void ReadMetadataBlockHeader_Picture()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var res = FlacCs.ReadMetadataBlockHeader(file[632..]);
 
@@ -99,7 +99,7 @@ public class FlacTests
     [Fact]
     public void ReadMetadataBlockStreamInfo()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var streamInfo = FlacCs.ReadMetadataBlockStreamInfo(file[8..]);
 
@@ -111,13 +111,17 @@ public class FlacTests
         Assert.Equal(2u, streamInfo.Channels);
         Assert.Equal(16u, streamInfo.BitsPerSample);
         Assert.Equal(7028438u, streamInfo.TotalSamples);
-        Assert.Equal("3c16b5b7186537d6823c7be62fe8c661", streamInfo.Md5Signature);
+
+        var hex = streamInfo.Md5Signature.Select(x => $"{x:x2}");
+        var md5 = string.Join(string.Empty, hex);
+
+        Assert.Equal("3c16b5b7186537d6823c7be62fe8c661", md5);
     }
 
     [Fact]
     public void ReadMetadataBlockPadding()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var res = FlacCs.ReadMetadataBlockPadding(file[80_528..], 16_384);
 
@@ -128,7 +132,7 @@ public class FlacTests
     [Fact]
     public void ReadMetadataBlockSeekTable()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var res = FlacCs.ReadMetadataBlockSeekTable(file[46..], 288);
 
@@ -159,7 +163,7 @@ public class FlacTests
     [Fact]
     public void ReadMetadataBlockVorbisComment()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var vorbisComment = FlacCs.ReadMetadataBlockVorbisComment(file[338..], 294);
 
@@ -219,7 +223,7 @@ public class FlacTests
     [Fact]
     public void ReadMetadataBlockPicture()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var picture = FlacCs.ReadMetadataBlockPicture(file[636..], 79_888);
 
@@ -237,7 +241,7 @@ public class FlacTests
     [Fact]
     public void ReadFlacStream_FlacFile()
     {
-        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
         var res = FlacCs.ReadFlacStream(file);
 

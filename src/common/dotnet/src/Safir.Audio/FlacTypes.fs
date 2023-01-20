@@ -1,5 +1,7 @@
 namespace Safir.Audio
 
+open System.Runtime.CompilerServices
+
 type BlockType =
     | StreamInfo = 0
     | Padding = 1
@@ -10,11 +12,13 @@ type BlockType =
     | Picture = 6
     | Invalid = 127
 
+[<Struct; IsReadOnly>]
 type MetadataBlockHeader =
     { LastBlock: bool
       BlockType: BlockType
       Length: int }
 
+[<Struct; IsReadOnly>]
 type MetadataBlockStreamInfo =
     { MinBlockSize: uint16
       MaxBlockSize: uint16
@@ -24,21 +28,25 @@ type MetadataBlockStreamInfo =
       Channels: uint16
       BitsPerSample: uint16
       TotalSamples: uint64
-      Md5Signature: string }
+      Md5Signature: byte [] }
 
+[<Struct; IsReadOnly>]
 type MetadataBlockPadding = MetadataBlockPadding of int
 
+[<Struct; IsReadOnly>]
 type MetadataBlockApplication =
     { ApplicationId: int
       ApplicationData: byte [] }
 
 // TODO: How to define placeholder seek points?
+[<Struct; IsReadOnly>]
 type SeekPoint =
     { SampleNumber: uint64
       StreamOffset: uint64
       FrameSamples: uint16 }
 
-type MetadataBlockSeekTable = MetadataBlockSeekTable of SeekPoint list
+[<Struct; IsReadOnly>]
+type MetadataBlockSeekTable = MetadataBlockSeekTable of SeekPoint array
 
 type MetadataBlockVorbisComment =
     { VendorString: string
