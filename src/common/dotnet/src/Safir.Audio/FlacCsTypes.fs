@@ -34,7 +34,7 @@ type MetadataBlockSeekTableCs(seekTable: MetadataBlockSeekTable) =
 
     member this.SeekPoints =
         match seekTable with
-        | MetadataBlockSeekTable p -> p |> List.toSeq
+        | MetadataBlockSeekTable p -> p |> Array.toSeq
 
 type MetadataBlockVorbisCommentCs(vorbisComment: MetadataBlockVorbisComment) =
     inherit MetadataBlockDataCs()

@@ -1,30 +1,20 @@
 module Safir.Audio.FlacCs
 
-let ReadMagic f =
-    Flac.readMagic f |> Option.defaultValue null
+let ReadMagic f = Flac.readMagic f
 
-let ReadMetadataBlockHeader f =
-    Flac.readMetadataBlockHeader f |> Option.get
+let ReadMetadataBlockHeader f = Flac.readMetadataBlockHeader f
 
 let ReadMetadataBlockStreamInfo f =
-    Flac.readMetadataBlockStreamInfo f
-    |> Option.map MetadataBlockStreamInfoCs
-    |> Option.get
+    Flac.readMetadataBlockStreamInfo f |> MetadataBlockStreamInfoCs
 
 let ReadMetadataBlockPadding f l =
-    Flac.readMetadataBlockPadding f l
-    |> Option.map MetadataBlockPaddingCs
-    |> Option.get
+    Flac.readMetadataBlockPadding f l |> MetadataBlockPaddingCs
 
 let ReadMetadataBlockApplication f l =
-    Flac.readMetadataBlockApplication f l
-    |> Option.map MetadataBlockApplicationCs
-    |> Option.get
+    Flac.readMetadataBlockApplication f l |> MetadataBlockApplicationCs
 
 let ReadMetadataBlockSeekTable f l =
-    Flac.readMetadataBlockSeekTable f l
-    |> Option.map MetadataBlockSeekTableCs
-    |> Option.get
+    Flac.readMetadataBlockSeekTable f l |> MetadataBlockSeekTableCs
 
 let ReadMetadataBlockVorbisComment f l =
     Flac.readMetadataBlockVorbisComment f l
