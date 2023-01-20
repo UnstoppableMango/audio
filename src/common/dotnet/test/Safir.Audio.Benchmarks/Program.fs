@@ -1,4 +1,4 @@
-﻿open System
+open System
 open System.IO
 open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Running
@@ -59,7 +59,7 @@ type FlacBench() =
     [<Benchmark>]
     member this.Padding() =
         let span : ReadOnlySpan<byte> = bytes
-        Flac.readMetadataBlockPicture (span.Slice(80_528)) 16_384
+        Flac.readMetadataBlockPadding (span.Slice(80_528)) 16_384
 
     [<Benchmark>]
     member this.FlacStream() = Flac.readFlacStream bytes
