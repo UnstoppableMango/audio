@@ -61,6 +61,18 @@ public class FlacTests
     }
 
     [Fact]
+    public void ReadMetadataBlockHeader_SeekTable()
+    {
+        Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
+
+        var res = FlacCs.ReadMetadataBlockHeader(file[42..]);
+
+        Assert.Equal(288, res.Length);
+        Assert.False(res.LastBlock);
+        Assert.Equal(BlockType.SeekTable, res.BlockType);
+    }
+
+    [Fact]
     public void ReadMetadataBlockHeader_VorbisComment()
     {
         Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
@@ -107,7 +119,7 @@ public class FlacTests
     {
         Span<byte> file = File.ReadAllBytes($"{FileName}.flac");
 
-        var res = FlacCs.ReadMetadataBlockPadding(file[80_528..], 16384);
+        var res = FlacCs.ReadMetadataBlockPadding(file[80_528..], 16_384);
 
         Assert.NotNull(res);
         Assert.Equal(16384, res.Padding);
