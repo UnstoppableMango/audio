@@ -168,56 +168,66 @@ public class FlacTests
         var vorbisComment = FlacCs.ReadMetadataBlockVorbisComment(file[338..], 294);
 
         Assert.NotNull(vorbisComment);
+        Assert.Equal("reference libFLAC 1.3.2 20170101"u8.ToArray(), vorbisComment.VendorString);
 
         var comments = vorbisComment.UserComments.ToList();
         Assert.Equal(14, comments.Count);
 
-        var title = Assert.IsType<TitleComment>(comments[0]);
-        Assert.Equal("Flirt", title.Value);
+        var title = comments[0];
+        Assert.Equal("TITLE"u8.ToArray(), title.Name);
+        Assert.Equal("Flirt"u8.ToArray(), title.Value);
 
-        var artist = Assert.IsType<ArtistComment>(comments[1]);
-        Assert.Equal("NEFFEX", artist.Value);
+        var artist = comments[1];
+        Assert.Equal("ARTIST"u8.ToArray(), artist.Name);
+        Assert.Equal("NEFFEX"u8.ToArray(), artist.Value);
 
-        var album = Assert.IsType<AlbumComment>(comments[2]);
-        Assert.Equal("Flirt", album.Value);
+        var album = comments[2];
+        Assert.Equal("ALBUM"u8.ToArray(), album.Name);
+        Assert.Equal("Flirt"u8.ToArray(), album.Value);
 
-        var albumArtist = Assert.IsType<OtherComment>(comments[3]);
-        Assert.Equal("ALBUMARTIST", albumArtist.Name);
-        Assert.Equal("NEFFEX", albumArtist.Value);
+        var albumArtist = comments[3];
+        Assert.Equal("ALBUMARTIST"u8.ToArray(), albumArtist.Name);
+        Assert.Equal("NEFFEX"u8.ToArray(), albumArtist.Value);
 
-        var trackNumber = Assert.IsType<TrackNumberComment>(comments[4]);
-        Assert.Equal("1", trackNumber.Value);
+        var trackNumber = comments[4];
+        Assert.Equal("TRACKNUMBER"u8.ToArray(), trackNumber.Name);
+        Assert.Equal("1"u8.ToArray(), trackNumber.Value);
 
-        var discNumber = Assert.IsType<OtherComment>(comments[5]);
-        Assert.Equal("DISCNUMBER", discNumber.Name);
-        Assert.Equal("1", discNumber.Value);
+        var discNumber = comments[5];
+        Assert.Equal("DISCNUMBER"u8.ToArray(), discNumber.Name);
+        Assert.Equal("1"u8.ToArray(), discNumber.Value);
 
-        var genre1 = Assert.IsType<GenreComment>(comments[6]);
-        Assert.Equal("Electro", genre1.Value);
+        var genre1 = comments[6];
+        Assert.Equal("GENRE"u8.ToArray(), genre1.Name);
+        Assert.Equal("Electro"u8.ToArray(), genre1.Value);
 
-        var genre2 = Assert.IsType<GenreComment>(comments[7]);
-        Assert.Equal("Dance", genre2.Value);
+        var genre2 = comments[7];
+        Assert.Equal("GENRE"u8.ToArray(), genre2.Name);
+        Assert.Equal("Dance"u8.ToArray(), genre2.Value);
 
-        var genre3 = Assert.IsType<GenreComment>(comments[8]);
-        Assert.Equal("Pop", genre3.Value);
+        var genre3 = comments[8];
+        Assert.Equal("GENRE"u8.ToArray(), genre3.Name);
+        Assert.Equal("Pop"u8.ToArray(), genre3.Value);
 
-        var date = Assert.IsType<DateComment>(comments[9]);
-        Assert.Equal("2017-10-11", date.Value);
+        var date = comments[9];
+        Assert.Equal("DATE"u8.ToArray(), date.Name);
+        Assert.Equal("2017-10-11"u8.ToArray(), date.Value);
 
-        var lengthComment = Assert.IsType<OtherComment>(comments[10]);
-        Assert.Equal("LENGTH", lengthComment.Name);
-        Assert.Equal("159000", lengthComment.Value);
+        var lengthComment = comments[10];
+        Assert.Equal("LENGTH"u8.ToArray(), lengthComment.Name);
+        Assert.Equal("159000"u8.ToArray(), lengthComment.Value);
 
-        var publisher = Assert.IsType<OtherComment>(comments[11]);
-        Assert.Equal("PUBLISHER", publisher.Name);
-        Assert.Equal("Burning Boat", publisher.Value);
+        var publisher = comments[11];
+        Assert.Equal("PUBLISHER"u8.ToArray(), publisher.Name);
+        Assert.Equal("Burning Boat"u8.ToArray(), publisher.Value);
 
-        var isrc = Assert.IsType<IsrcComment>(comments[12]);
-        Assert.Equal("TCADH1750644", isrc.Value);
+        var isrc = comments[12];
+        Assert.Equal("ISRC"u8.ToArray(), isrc.Name);
+        Assert.Equal("TCADH1750644"u8.ToArray(), isrc.Value);
 
-        var barcode = Assert.IsType<OtherComment>(comments[13]);
-        Assert.Equal("BARCODE", barcode.Name);
-        Assert.Equal("859723487007", barcode.Value);
+        var barcode = comments[13];
+        Assert.Equal("BARCODE"u8.ToArray(), barcode.Name);
+        Assert.Equal("859723487007"u8.ToArray(), barcode.Value);
     }
 
     [Fact]
@@ -228,8 +238,8 @@ public class FlacTests
         var picture = FlacCs.ReadMetadataBlockPicture(file[636..], 79_888);
 
         Assert.Equal(PictureType.FrontCover, picture.Type);
-        Assert.Equal("image/jpeg", picture.MimeType);
-        Assert.Equal(string.Empty, picture.Description);
+        Assert.Equal("image/jpeg"u8.ToArray(), picture.MimeType);
+        Assert.Empty(picture.Description);
         Assert.Equal(800u, picture.Width);
         Assert.Equal(800u, picture.Height);
         Assert.Equal(24u, picture.Depth);

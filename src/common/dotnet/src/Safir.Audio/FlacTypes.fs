@@ -48,16 +48,14 @@ type SeekPoint =
 [<Struct; IsReadOnly>]
 type MetadataBlockSeekTable = MetadataBlockSeekTable of SeekPoint array
 
-type MetadataBlockVorbisComment =
-    { VendorString: string
-      UserComments: VorbisComment list }
+type MetadataBlockVorbisComment = VorbisCommentHeader
 
 type CueSheetTrackIndex = { Offset: uint64; IndexPoint: uint16 }
 
 type CueSheetTrack =
     { Offset: uint64
       Number: uint16
-      Isrc: string option
+      Isrc: byte []
       IsAudio: bool
       PreEmphasis: bool
       IndexPoints: uint16
@@ -96,9 +94,9 @@ type PictureType =
 type MetadataBlockPicture =
     { Type: PictureType
       MimeLength: uint32
-      MimeType: string
+      MimeType: byte []
       DescriptionLength: uint32
-      Description: string
+      Description: byte []
       Width: uint32
       Height: uint32
       Depth: uint32

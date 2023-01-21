@@ -103,8 +103,7 @@ let readMetadataBlockApplication (f: ReadOnlySpan<byte>) (length: int) =
       ApplicationData = data }
 
 let readSeekPoint (f: ReadOnlySpan<byte>) =
-    if f.Length < 18 then
-        throw "Invalid seek point length"
+    if f.Length < 18 then throw "Invalid seek point length"
 
     { SampleNumber = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
       StreamOffset = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(8, 8))
@@ -124,126 +123,114 @@ let readMetadataBlockSeekTable (f: ReadOnlySpan<byte>) (length: int) =
 
 let readMetadataBlockVorbisComment (f: ReadOnlySpan<byte>) (length: int) =
     if int64 length >= (pown 2L 24) - 1L then
-        None
-    else
-        Vorbis.pVorbisCommentHeader f length
-        |> Option.map (fun x ->
-            { VendorString = x.VendorString
-              UserComments = x.UserComments })
+        throw "Invalid vorbis comment block length"
+
+    Vorbis.readVorbisCommentHeader f length
 
 let readCueSheetTrackIndex (f: ReadOnlySpan<byte>) =
-    let o = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
-
-    let ipna = [| 0uy; f[8] |]
-    let ipn = BinaryPrimitives.ReadUInt16BigEndian(ipna)
+    let offset = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
+    let indexPoint = uint16 f[8]
 
     if f.Slice(9, 3 * 8).IndexOfAnyExcept(0uy) <> -1 then
-        None
-    else
-        Some { Offset = o; IndexPoint = ipn }
+        throw "Non-zero bit found in reserved block"
+
+    { Offset = offset
+      IndexPoint = indexPoint }
 
 let readCueSheetTrack (f: ReadOnlySpan<byte>) =
-    let o = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
+    let trackOffset = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
+    let trackNumber = uint16 f[8]
+    let isrc = f.Slice(9, 12 * 8).ToArray()
 
-    let ta = [| 0uy; f[8] |]
-    let t = BinaryPrimitives.ReadUInt16BigEndian(ta)
+    let mutable offset = 9 + (12 * 8)
 
-    let isrcS = f.Slice(9, 12 * 8)
-
-    let isrc =
-        if isrcS.IndexOfAnyExcept(0uy) <> -1 then
-            Some(Encoding.ASCII.GetString(isrcS))
-        else
-            None
-
-    let apb = f[105]
-    let a = (apb &&& 0x80uy) = 0uy
-    let p = (apb &&& 0x40uy) <> 0uy
+    let apb = f[offset]
+    let isAudio = (apb &&& 0x80uy) = 0uy
+    let preEmphasis = (apb &&& 0x40uy) <> 0uy
 
     // Skip 6 + 13 * 8
-    if f.Slice(105, 13 * 8).IndexOfAnyExcept(0uy) <> -1 then
-        None
-    else
-        let ia = [| 0uy; f[209] |]
-        let i = BinaryPrimitives.ReadUInt16BigEndian(ia)
+    if f.Slice(offset, 13 * 8).IndexOfAnyExcept(0uy) <> -1 then
+        throw "Non-zero bit found in reserved block"
 
-        // TODO
-        let ctis = if t = 170us || t = 255us then List.empty else List.empty
+    offset <- offset + (13 * 8)
 
-        { Offset = o
-          Number = t
-          Isrc = isrc
-          IsAudio = a
-          PreEmphasis = p
-          IndexPoints = i
-          TrackIndexPoints = ctis }
-        |> Some
+    let n = uint16 f[offset]
+
+    // TODO
+    let ctis = if trackNumber = 170us || trackNumber = 255us then List.empty else List.empty
+
+    { Offset = trackOffset
+      Number = trackNumber
+      Isrc = isrc
+      IsAudio = isAudio
+      PreEmphasis = preEmphasis
+      IndexPoints = n
+      TrackIndexPoints = ctis }
 
 // TODO
-let readMetadataBlockCueSheet (f: ReadOnlySpan<byte>) (length: int) = None
+let readMetadataBlockCueSheet (f: ReadOnlySpan<byte>) (length: int) = raise (NotImplementedException())
 
 let readMetadataBlockPicture (f: ReadOnlySpan<byte>) (length: int) =
     if f.Length < length then
-        None
-    else
-        let mutable o = 0
+        throw "Buffer is smaller than specified picture size"
 
-        let tb = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(0, 4)) |> int
-        let t = enum<PictureType> tb
-        o <- o + 4
+    let mutable o = 0
 
-        let ml = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
-        o <- o + 4
+    let typeInt = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(0, 4)) |> int
+    let pictureType = enum<PictureType> typeInt
+    o <- o + 4
 
-        let mli = ml |> int
-        let mt = Encoding.ASCII.GetString(f.Slice(o, mli))
-        o <- o + mli
+    let mimeLength = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+    o <- o + 4
 
-        let dl = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
-        o <- o + 4
+    let mimeLengthInt = mimeLength |> int
+    let mimeType = f.Slice(o, mimeLengthInt).ToArray()
+    o <- o + mimeLengthInt
 
-        let dli = dl |> int
-        let ds = Encoding.UTF8.GetString(f.Slice(o, dli))
-        o <- o + dli
+    let descriptionLength = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+    o <- o + 4
 
-        let w = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
-        o <- o + 4
+    let descriptionLenghtInt = descriptionLength |> int
+    let description = f.Slice(o, descriptionLenghtInt).ToArray()
+    o <- o + descriptionLenghtInt
 
-        let h = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
-        o <- o + 4
+    let width = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+    o <- o + 4
 
-        let d = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
-        o <- o + 4
+    let height = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+    o <- o + 4
 
-        let c = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
-        o <- o + 4
+    let depth = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+    o <- o + 4
 
-        let pdl = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+    let colors = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
+    o <- o + 4
 
-        let pdli = pdl |> int
-        let pd = f.Slice(o, pdli).ToArray()
+    let dataLength = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
 
-        { Type = t
-          MimeLength = ml
-          MimeType = mt
-          DescriptionLength = dl
-          Description = ds
-          Width = w
-          Height = h
-          Depth = d
-          Colors = c
-          DataLength = pdl
-          Data = pd }
-        |> Some
+    let dataLengthInt = dataLength |> int
+    let data = f.Slice(o, dataLengthInt).ToArray()
+
+    { Type = pictureType
+      MimeLength = mimeLength
+      MimeType = mimeType
+      DescriptionLength = descriptionLength
+      Description = description
+      Width = width
+      Height = height
+      Depth = depth
+      Colors = colors
+      DataLength = dataLength
+      Data = data }
 
 let readMetadataBlockData (f: ReadOnlySpan<byte>) (length: int) =
     function
     | BlockType.StreamInfo -> StreamInfo(readMetadataBlockStreamInfo f) |> Some
-    | BlockType.Padding -> Padding (readMetadataBlockPadding f length) |> Some
-    | BlockType.SeekTable -> SeekTable (readMetadataBlockSeekTable f length) |> Some
-    | BlockType.VorbisComment -> Option.map VorbisComment (readMetadataBlockVorbisComment f length)
-    | BlockType.CueSheet -> Option.map CueSheet (readMetadataBlockCueSheet f length)
-    | BlockType.Picture -> Option.map Picture (readMetadataBlockPicture f length)
+    | BlockType.Padding -> Padding(readMetadataBlockPadding f length) |> Some
+    | BlockType.SeekTable -> SeekTable(readMetadataBlockSeekTable f length) |> Some
+    | BlockType.VorbisComment -> VorbisComment(readMetadataBlockVorbisComment f length) |> Some
+    | BlockType.CueSheet -> CueSheet (readMetadataBlockCueSheet f length) |> Some
+    | BlockType.Picture -> Picture (readMetadataBlockPicture f length) |> Some
     | BlockType.Invalid -> None
     | _ -> Some(Skipped(f.Slice(0, length).ToArray()))
 

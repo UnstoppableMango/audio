@@ -41,7 +41,7 @@ type MetadataBlockVorbisCommentCs(vorbisComment: MetadataBlockVorbisComment) =
     member this.VendorString = vorbisComment.VendorString
 
     member this.UserComments =
-        vorbisComment.UserComments |> List.map VorbisCs.toCsComment |> List.toSeq
+        vorbisComment.UserComments |> Array.toSeq
 
 type MetadataBlockCueSheetCs(cueSheet: MetadataBlockCueSheet) =
     inherit MetadataBlockDataCs()
