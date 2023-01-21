@@ -22,5 +22,4 @@ let ReadMetadataBlockVorbisComment f l =
 let ReadMetadataBlockPicture f l =
     Flac.readMetadataBlockPicture f l |> MetadataBlockPictureCs
 
-let ReadFlacStream f =
-    Flac.readFlacStream f |> Option.map FlacStreamCs |> Option.get
+let ReadFlacStream f = Flac.readFlacStream f |> FlacStreamCs

@@ -2,12 +2,11 @@ module Safir.Audio.Flac
 
 open System
 open System.Buffers.Binary
-open System.Text
 
 let private magic = [| 0x66uy; 0x4Cuy; 0x61uy; 0x43uy |]
 
 // TODO: Use these min/max block sizes for validation/whatever
-// https://xiph.org/flac/format.html#metadata_block_streaminfo
+// https://xiph.org/flac/format.html#METADATA_BLOCK_STREAMINFO
 let private minBlockSize = 15
 let private maxBlockSize = 65535
 
@@ -157,7 +156,11 @@ let readCueSheetTrack (f: ReadOnlySpan<byte>) =
     let n = uint16 f[offset]
 
     // TODO
-    let ctis = if trackNumber = 170us || trackNumber = 255us then List.empty else List.empty
+    let ctis =
+        if trackNumber = 170us || trackNumber = 255us then
+            List.empty
+        else
+            List.empty
 
     { Offset = trackOffset
       Number = trackNumber
@@ -225,21 +228,20 @@ let readMetadataBlockPicture (f: ReadOnlySpan<byte>) (length: int) =
 
 let readMetadataBlockData (f: ReadOnlySpan<byte>) (length: int) =
     function
-    | BlockType.StreamInfo -> StreamInfo(readMetadataBlockStreamInfo f) |> Some
-    | BlockType.Padding -> Padding(readMetadataBlockPadding f length) |> Some
-    | BlockType.SeekTable -> SeekTable(readMetadataBlockSeekTable f length) |> Some
-    | BlockType.VorbisComment -> VorbisComment(readMetadataBlockVorbisComment f length) |> Some
-    | BlockType.CueSheet -> CueSheet (readMetadataBlockCueSheet f length) |> Some
-    | BlockType.Picture -> Picture (readMetadataBlockPicture f length) |> Some
-    | BlockType.Invalid -> None
-    | _ -> Some(Skipped(f.Slice(0, length).ToArray()))
+    | BlockType.StreamInfo -> StreamInfo(readMetadataBlockStreamInfo f)
+    | BlockType.Padding -> Padding(readMetadataBlockPadding f length)
+    | BlockType.SeekTable -> SeekTable(readMetadataBlockSeekTable f length)
+    | BlockType.VorbisComment -> VorbisComment(readMetadataBlockVorbisComment f length)
+    | BlockType.CueSheet -> CueSheet(readMetadataBlockCueSheet f length)
+    | BlockType.Picture -> Picture(readMetadataBlockPicture f length)
+    | BlockType.Invalid -> invalidOp "Invalid metadata block type"
+    | _ -> Skipped(f.Slice(0, length).ToArray())
 
 let readMetadataBlock (f: ReadOnlySpan<byte>) =
     let header = readMetadataBlockHeader f
+    let data = readMetadataBlockData (f.Slice(4)) header.Length header.BlockType
 
-    readMetadataBlockData (f.Slice(4)) header.Length header.BlockType
-    |> Option.defaultValue (Skipped(f.Slice(4, header.Length).ToArray()))
-    |> (fun d -> Some { Header = header; Data = d })
+    { Header = header; Data = data }
 
 let readMetadataBlocks (f: ReadOnlySpan<byte>) =
     let mutable blocks = List.empty
@@ -250,29 +252,18 @@ let readMetadataBlocks (f: ReadOnlySpan<byte>) =
         let block = readMetadataBlock (f.Slice(offset))
 
         blocks <- block :: blocks
+        offset <- offset + block.Header.Length + 4
+        cont <- not block.Header.LastBlock
 
-        block |> Option.iter (fun x -> offset <- offset + x.Header.Length + 4)
-
-        cont <-
-            block
-            |> Option.map (fun x -> not x.Header.LastBlock)
-            |> Option.defaultValue false
-
-    blocks |> List.rev |> List.sequenceOptionM
+    blocks |> List.rev
 
 let readFlacStream (f: ReadOnlySpan<byte>) =
     let magic = readMagic f
+    let streamInfo = readMetadataBlock (f.Slice(4))
 
-    let isStreamInfo x =
-        x.Header.BlockType = BlockType.StreamInfo
+    if streamInfo.Header.BlockType <> BlockType.StreamInfo then
+        throw "Stream info must be the first block"
 
-    let streamInfo = readMetadataBlock (f.Slice(4)) |> Option.filter isStreamInfo
+    let blocks = readMetadataBlocks (f.Slice(streamInfo.Header.Length + 8))
 
-    let blocks =
-        match streamInfo with
-        | Some x -> readMetadataBlocks (f.Slice(x.Header.Length + 8))
-        | None -> None
-
-    blocks
-    |> Option.map2 (fun s b -> s :: b) streamInfo
-    |> Option.map (fun x -> { Metadata = x })
+    { Metadata = streamInfo :: blocks }
