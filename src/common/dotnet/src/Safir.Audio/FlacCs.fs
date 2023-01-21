@@ -17,14 +17,10 @@ let ReadMetadataBlockSeekTable f l =
     Flac.readMetadataBlockSeekTable f l |> MetadataBlockSeekTableCs
 
 let ReadMetadataBlockVorbisComment f l =
-    Flac.readMetadataBlockVorbisComment f l
-    |> Option.map MetadataBlockVorbisCommentCs
-    |> Option.get
+    Flac.readMetadataBlockVorbisComment f l |> MetadataBlockVorbisCommentCs
 
 let ReadMetadataBlockPicture f l =
-    Flac.readMetadataBlockPicture f l
-    |> Option.map MetadataBlockPictureCs
-    |> Option.get
+    Flac.readMetadataBlockPicture f l |> MetadataBlockPictureCs
 
 let ReadFlacStream f =
     Flac.readFlacStream f |> Option.map FlacStreamCs |> Option.get
