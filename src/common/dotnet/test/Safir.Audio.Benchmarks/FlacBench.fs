@@ -65,4 +65,4 @@ type FlacBench() =
         Flac.readMetadataBlockPadding (span.Slice(80_528)) 16_384
 
     [<Benchmark>]
-    member this.FlacStream() = Flac.readFlacStream bytes
+    member this.FlacStream() = Flac.readStream bytes
