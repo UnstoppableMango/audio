@@ -255,10 +255,10 @@ public class FlacTests
         var metadata = res.Metadata.ToList();
         Assert.Equal(5, metadata.Count);
 
-        Assert.IsType<MetadataBlockStreamInfoCs>(metadata[0].Data);
-        Assert.IsType<MetadataBlockSeekTableCs>(metadata[1].Data);
-        Assert.IsType<MetadataBlockVorbisCommentCs>(metadata[2].Data);
-        Assert.IsType<MetadataBlockPictureCs>(metadata[3].Data);
-        Assert.IsType<MetadataBlockPaddingCs>(metadata[4].Data);
+        Assert.IsType<MetadataBlockStreamInfoValueCs>(metadata[0].Data);
+        Assert.IsType<MetadataBlockSeekTableValueCs>(metadata[1].Data);
+        Assert.IsType<MetadataBlockVorbisCommentValueCs>(metadata[2].Data);
+        Assert.IsType<MetadataBlockPictureValueCs>(metadata[3].Data);
+        Assert.IsType<MetadataBlockPaddingValueCs>(metadata[4].Data);
     }
 }

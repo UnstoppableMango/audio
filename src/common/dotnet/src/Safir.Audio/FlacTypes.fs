@@ -14,13 +14,13 @@ type BlockType =
     | Invalid = 127
 
 [<Struct; IsReadOnly>]
-type MetadataBlockHeader =
+type MetadataBlockHeaderValue =
     { LastBlock: bool
       BlockType: BlockType
       Length: int }
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockStreamInfo =
+type MetadataBlockStreamInfoValue =
     { MinBlockSize: uint16
       MaxBlockSize: uint16
       MinFrameSize: uint32
@@ -32,32 +32,32 @@ type MetadataBlockStreamInfo =
       Md5Signature: ReadOnlySpan<byte> }
 
 [<Struct; IsReadOnly>]
-type MetadataBlockPadding = MetadataBlockPadding of int
+type MetadataBlockPaddingValue = MetadataBlockPaddingValue of int
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockApplication =
+type MetadataBlockApplicationValue =
     { ApplicationId: uint32
       ApplicationData: ReadOnlySpan<byte> }
 
 // TODO: How to define placeholder seek points?
 [<Struct; IsReadOnly>]
-type SeekPoint =
+type SeekPointValue =
     { SampleNumber: uint64
       StreamOffset: uint64
       FrameSamples: uint16 }
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockSeekTable =
+type MetadataBlockSeekTableValue =
     { Count: int
       SeekPoints: ReadOnlySpan<byte> }
 
-type MetadataBlockVorbisComment = VorbisCommentHeader
+type MetadataBlockVorbisCommentValue = VorbisCommentHeaderValue
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type CueSheetTrackIndex = { Offset: uint64; IndexPoint: uint16 }
+type CueSheetTrackIndexValue = { Offset: uint64; IndexPoint: uint16 }
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type CueSheetTrack =
+type CueSheetTrackValue =
     { Offset: uint64
       Number: uint16
       Isrc: ReadOnlySpan<byte>
@@ -67,7 +67,7 @@ type CueSheetTrack =
       TrackIndexPoints: ReadOnlySpan<byte> }
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockCueSheet =
+type MetadataBlockCueSheetValue =
     { CatalogNumber: ReadOnlySpan<byte>
       LeadInSamples: uint64
       IsCompactDisc: bool
@@ -98,7 +98,7 @@ type PictureType =
     | PublisherLogoType = 20
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockPicture =
+type MetadataBlockPictureValue =
     { Type: PictureType
       MimeLength: uint32
       MimeType: ReadOnlySpan<byte>
@@ -112,19 +112,19 @@ type MetadataBlockPicture =
       Data: ReadOnlySpan<byte> }
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockData =
-    | StreamInfo of streamInfo: MetadataBlockStreamInfo
-    | Padding of padding: MetadataBlockPadding
-    | Application of application: MetadataBlockApplication
-    | SeekTable of seekTable: MetadataBlockSeekTable
-    | VorbisComment of vorbisComment: MetadataBlockVorbisComment
-    | CueSheet of cueSheet: MetadataBlockCueSheet
-    | Picture of picture: MetadataBlockPicture
+type MetadataBlockDataValue =
+    | StreamInfo of streamInfo: MetadataBlockStreamInfoValue
+    | Padding of padding: MetadataBlockPaddingValue
+    | Application of application: MetadataBlockApplicationValue
+    | SeekTable of seekTable: MetadataBlockSeekTableValue
+    | VorbisComment of vorbisComment: MetadataBlockVorbisCommentValue
+    | CueSheet of cueSheet: MetadataBlockCueSheetValue
+    | Picture of picture: MetadataBlockPictureValue
     | Skipped of ReadOnlySpan<byte>
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlock =
-    { Header: MetadataBlockHeader
-      Data: MetadataBlockData }
+type MetadataBlockValue =
+    { Header: MetadataBlockHeaderValue
+      Data: MetadataBlockDataValue }
 
 type FlacStream = { Metadata: List<Object> }
