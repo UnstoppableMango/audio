@@ -7,13 +7,14 @@ let private throw m : unit = invalidOp m
 
 let readComment (f: ReadOnlySpan<byte>) =
     let length = BinaryPrimitives.ReadUInt32LittleEndian(f.Slice(0, 4))
+    let rest = f.Slice(4)
 
-    let midIndex = f.IndexOf(byte '=')
+    let midIndex = rest.IndexOf(byte '=')
 
     if midIndex = -1 then throw "Invalid vorbis comment"
 
-    let name = f.Slice(0, midIndex)
-    let value = f.Slice(midIndex + 1, (int length) - midIndex - 1)
+    let name = rest.Slice(0, midIndex)
+    let value = rest.Slice(midIndex + 1, (int length) - midIndex - 1)
 
     { Length = length
       Name = name
@@ -38,7 +39,7 @@ let readCommentHeader (f: ReadOnlySpan<byte>) (length: int) =
     // TODO: Can we slice the span with comments without reading all of them?
     for i = 0 to listLengthInt - 1 do
         let comment = readComment (f.Slice(offset))
-        offset <- offset + (int comment.Length)
+        offset <- offset + 4 + (int comment.Length)
 
     let comments = f.Slice(listStart, offset - listStart)
 
