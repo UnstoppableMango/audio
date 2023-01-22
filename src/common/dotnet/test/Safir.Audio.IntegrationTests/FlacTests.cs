@@ -112,10 +112,9 @@ public class FlacTests
         Assert.Equal(16u, streamInfo.BitsPerSample);
         Assert.Equal(7028438u, streamInfo.TotalSamples);
 
-        var hex = streamInfo.Md5Signature.Select(x => $"{x:x2}");
-        var md5 = string.Join(string.Empty, hex);
+        var md5 = Flac.readMd5Signature(streamInfo.Md5Signature);
 
-        Assert.Equal("3c16b5b7186537d6823c7be62fe8c661", md5);
+        Assert.Equal("3c16b5b7186537d6823c7be62fe8c661", md5, ignoreCase: true);
     }
 
     [Fact]
@@ -136,25 +135,24 @@ public class FlacTests
 
         var res = FlacCs.ReadMetadataBlockSeekTable(file[46..], 288);
 
-        var list = res.SeekPoints.ToList();
-        Assert.Equal(16, list.Count);
+        Assert.Equal(16, res.Count);
 
-        var first = list[0];
+        var first = Flac.readSeekPoint(res.SeekPoints[..]);
         Assert.Equal(0UL, first.SampleNumber);
         Assert.Equal(0UL, first.StreamOffset);
         Assert.Equal(4096, first.FrameSamples);
 
-        var second = list[1];
+        var second = Flac.readSeekPoint(res.SeekPoints[18..]);
         Assert.Equal(438_272UL, second.SampleNumber);
         Assert.Equal(532_963UL, second.StreamOffset);
         Assert.Equal(4096, second.FrameSamples);
 
-        var third = list[2];
+        var third = Flac.readSeekPoint(res.SeekPoints[36..]);
         Assert.Equal(880_640UL, third.SampleNumber);
         Assert.Equal(1_732_918UL, third.StreamOffset);
         Assert.Equal(4096, third.FrameSamples);
 
-        var last = list.Last();
+        var last = Flac.readSeekPoint(res.SeekPoints[(15 * 18)..]);
         Assert.Equal(6_610_944UL, last.SampleNumber);
         Assert.Equal(1_8894_059UL, last.StreamOffset);
         Assert.Equal(4096, last.FrameSamples);
@@ -167,11 +165,8 @@ public class FlacTests
 
         var vorbisComment = FlacCs.ReadMetadataBlockVorbisComment(file[338..], 294);
 
-        Assert.NotNull(vorbisComment);
-        Assert.Equal("reference libFLAC 1.3.2 20170101"u8.ToArray(), vorbisComment.VendorString);
-
-        var comments = vorbisComment.UserComments.ToList();
-        Assert.Equal(14, comments.Count);
+        Assert.True("reference libFLAC 1.3.2 20170101"u8.SequenceEqual(vorbisComment.VendorString));
+        Assert.Equal(14u, vorbisComment.UserCommentListLength);
 
         var title = comments[0];
         Assert.Equal("TITLE"u8.ToArray(), title.Name);
@@ -238,8 +233,8 @@ public class FlacTests
         var picture = FlacCs.ReadMetadataBlockPicture(file[636..], 79_888);
 
         Assert.Equal(PictureType.FrontCover, picture.Type);
-        Assert.Equal("image/jpeg"u8.ToArray(), picture.MimeType);
-        Assert.Empty(picture.Description);
+        Assert.True("image/jpeg"u8.SequenceEqual(picture.MimeType));
+        Assert.Equal(0, picture.Description.Length);
         Assert.Equal(800u, picture.Width);
         Assert.Equal(800u, picture.Height);
         Assert.Equal(24u, picture.Depth);

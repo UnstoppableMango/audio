@@ -14,9 +14,9 @@ type VorbisBench() =
     [<Benchmark>]
     member this.VorbisCommentHeader() =
         let span: ReadOnlySpan<byte> = bytes
-        Vorbis.readVorbisCommentHeader (span.Slice(338)) 294
+        Vorbis.readCommentHeader (span.Slice(338)) 294
 
     [<Benchmark>]
     member this.VorbisComment() =
         let span: ReadOnlySpan<byte> = bytes
-        Vorbis.readVorbisComment (span.Slice(382)) 11
+        Vorbis.readComment (span.Slice(382)) 11

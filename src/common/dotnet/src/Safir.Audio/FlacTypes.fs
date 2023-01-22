@@ -1,5 +1,6 @@
 namespace Safir.Audio
 
+open System
 open System.Runtime.CompilerServices
 
 type BlockType =
@@ -18,25 +19,25 @@ type MetadataBlockHeader =
       BlockType: BlockType
       Length: int }
 
-[<Struct; IsReadOnly>]
+[<Struct; IsReadOnly; IsByRefLike>]
 type MetadataBlockStreamInfo =
     { MinBlockSize: uint16
       MaxBlockSize: uint16
-      MinFrameSize: uint
-      MaxFrameSize: uint
-      SampleRate: uint
+      MinFrameSize: uint32
+      MaxFrameSize: uint32
+      SampleRate: uint32
       Channels: uint16
       BitsPerSample: uint16
       TotalSamples: uint64
-      Md5Signature: byte [] }
+      Md5Signature: ReadOnlySpan<byte> }
 
 [<Struct; IsReadOnly>]
 type MetadataBlockPadding = MetadataBlockPadding of int
 
-[<Struct; IsReadOnly>]
+[<Struct; IsReadOnly; IsByRefLike>]
 type MetadataBlockApplication =
-    { ApplicationId: int
-      ApplicationData: byte [] }
+    { ApplicationId: uint32
+      ApplicationData: ReadOnlySpan<byte> }
 
 // TODO: How to define placeholder seek points?
 [<Struct; IsReadOnly>]
@@ -45,28 +46,33 @@ type SeekPoint =
       StreamOffset: uint64
       FrameSamples: uint16 }
 
-[<Struct; IsReadOnly>]
-type MetadataBlockSeekTable = MetadataBlockSeekTable of SeekPoint array
+[<Struct; IsReadOnly; IsByRefLike>]
+type MetadataBlockSeekTable =
+    { Count: int
+      SeekPoints: ReadOnlySpan<byte> }
 
 type MetadataBlockVorbisComment = VorbisCommentHeader
 
+[<Struct; IsReadOnly; IsByRefLike>]
 type CueSheetTrackIndex = { Offset: uint64; IndexPoint: uint16 }
 
+[<Struct; IsReadOnly; IsByRefLike>]
 type CueSheetTrack =
     { Offset: uint64
       Number: uint16
-      Isrc: byte []
+      Isrc: ReadOnlySpan<byte>
       IsAudio: bool
       PreEmphasis: bool
       IndexPoints: uint16
-      TrackIndexPoints: CueSheetTrackIndex list }
+      TrackIndexPoints: ReadOnlySpan<byte> }
 
+[<Struct; IsReadOnly; IsByRefLike>]
 type MetadataBlockCueSheet =
-    { CatalogNumber: string
+    { CatalogNumber: ReadOnlySpan<byte>
       LeadInSamples: uint64
       IsCompactDisc: bool
       TotalTracks: uint16
-      Tracks: CueSheetTrack list }
+      Tracks: ReadOnlySpan<byte> }
 
 type PictureType =
     | Other = 0
@@ -91,31 +97,34 @@ type PictureType =
     | ArtistLogoType = 19
     | PublisherLogoType = 20
 
+[<Struct; IsReadOnly; IsByRefLike>]
 type MetadataBlockPicture =
     { Type: PictureType
       MimeLength: uint32
-      MimeType: byte []
+      MimeType: ReadOnlySpan<byte>
       DescriptionLength: uint32
-      Description: byte []
+      Description: ReadOnlySpan<byte>
       Width: uint32
       Height: uint32
       Depth: uint32
       Colors: uint32
       DataLength: uint32
-      Data: byte [] }
+      Data: ReadOnlySpan<byte> }
 
+[<Struct; IsReadOnly; IsByRefLike>]
 type MetadataBlockData =
-    | StreamInfo of MetadataBlockStreamInfo
-    | Padding of MetadataBlockPadding
-    | Application of MetadataBlockApplication
-    | SeekTable of MetadataBlockSeekTable
-    | VorbisComment of MetadataBlockVorbisComment
-    | CueSheet of MetadataBlockCueSheet
-    | Picture of MetadataBlockPicture
-    | Skipped of byte []
+    | StreamInfo of streamInfo: MetadataBlockStreamInfo
+    | Padding of padding: MetadataBlockPadding
+    | Application of application: MetadataBlockApplication
+    | SeekTable of seekTable: MetadataBlockSeekTable
+    | VorbisComment of vorbisComment: MetadataBlockVorbisComment
+    | CueSheet of cueSheet: MetadataBlockCueSheet
+    | Picture of picture: MetadataBlockPicture
+    | Skipped of ReadOnlySpan<byte>
 
+[<Struct; IsReadOnly; IsByRefLike>]
 type MetadataBlock =
     { Header: MetadataBlockHeader
       Data: MetadataBlockData }
 
-type FlacStream = { Metadata: MetadataBlock list }
+type FlacStream = { Metadata: List<Object> }
