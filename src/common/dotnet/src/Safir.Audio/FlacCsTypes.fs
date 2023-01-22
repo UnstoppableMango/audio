@@ -14,6 +14,7 @@ type MetadataBlockStreamInfoValueCs(streamInfo: MetadataBlockStreamInfoValue) =
     member this.TotalSamples = streamInfo.TotalSamples
     member this.Md5Signature = streamInfo.Md5Signature
 
+[<Struct; IsReadOnly; IsByRefLike>]
 type MetadataBlockPaddingValueCs(padding: MetadataBlockPaddingValue) =
     member this.Padding =
         match padding with

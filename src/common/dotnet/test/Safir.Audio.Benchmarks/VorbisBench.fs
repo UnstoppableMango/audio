@@ -19,4 +19,4 @@ type VorbisBench() =
     [<Benchmark>]
     member this.VorbisComment() =
         let span: ReadOnlySpan<byte> = bytes
-        Vorbis.readComment (span.Slice(382)) 11
+        Vorbis.readComment (span.Slice(378))
