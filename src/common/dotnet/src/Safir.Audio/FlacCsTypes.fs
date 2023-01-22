@@ -3,7 +3,7 @@ namespace Safir.Audio
 open System.Runtime.CompilerServices
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockStreamInfoCs(streamInfo: MetadataBlockStreamInfo) =
+type MetadataBlockStreamInfoValueCs(streamInfo: MetadataBlockStreamInfoValue) =
     member this.MinBlockSize = streamInfo.MinBlockSize
     member this.MaxBlockSize = streamInfo.MaxBlockSize
     member this.MinFrameSize = streamInfo.MinFrameSize
@@ -14,32 +14,32 @@ type MetadataBlockStreamInfoCs(streamInfo: MetadataBlockStreamInfo) =
     member this.TotalSamples = streamInfo.TotalSamples
     member this.Md5Signature = streamInfo.Md5Signature
 
-type MetadataBlockPaddingCs(padding: MetadataBlockPadding) =
+type MetadataBlockPaddingValueCs(padding: MetadataBlockPaddingValue) =
     member this.Padding =
         match padding with
-        | MetadataBlockPadding p -> p
+        | MetadataBlockPaddingValue p -> p
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockApplicationCs(application: MetadataBlockApplication) =
+type MetadataBlockApplicationValueCs(application: MetadataBlockApplicationValue) =
     member this.Id = application.ApplicationId
     member this.Data = application.ApplicationData
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockSeekTableCs(seekTable: MetadataBlockSeekTable) =
+type MetadataBlockSeekTableValueCs(seekTable: MetadataBlockSeekTableValue) =
     member this.Count = seekTable.Count
     member this.SeekPoints = seekTable.SeekPoints
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockVorbisCommentCs(vorbisComment: MetadataBlockVorbisComment) =
+type MetadataBlockVorbisCommentValueCs(vorbisComment: MetadataBlockVorbisCommentValue) =
     member this.VendorLength = vorbisComment.VendorLength
     member this.VendorString = vorbisComment.VendorString
     member this.UserCommentListLength = vorbisComment.UserCommentListLength
     member this.UserComments = vorbisComment.UserComments
 
-type MetadataBlockCueSheetCs(cueSheet: MetadataBlockCueSheet) = class end
+type MetadataBlockCueSheetValueCs(cueSheet: MetadataBlockCueSheetValue) = class end
 
 [<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockPictureCs(picture: MetadataBlockPicture) =
+type MetadataBlockPictureValueCs(picture: MetadataBlockPictureValue) =
     member this.Type = picture.Type
     member this.MimeLength = picture.MimeLength
     member this.MimeType = picture.MimeType
@@ -52,7 +52,7 @@ type MetadataBlockPictureCs(picture: MetadataBlockPicture) =
     member this.DataLength = picture.DataLength
     member this.Data = picture.Data
 
-type MetadataBlockSkippedCs(block: byte []) =
+type MetadataBlockSkippedValueCs(block: byte []) =
     member this.Block = block
 
 // type MetadataBlockCs(block: MetadataBlock) =

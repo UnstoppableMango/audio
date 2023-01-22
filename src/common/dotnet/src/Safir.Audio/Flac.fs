@@ -89,7 +89,7 @@ let readMetadataBlockPadding (f: ReadOnlySpan<byte>) (length: int) =
     if f.Slice(0, length).IndexOfAnyExcept(0uy) <> -1 then
         throw "Padding contains invalid bytes"
 
-    MetadataBlockPadding length
+    MetadataBlockPaddingValue length
 
 let readMetadataBlockApplication (f: ReadOnlySpan<byte>) (length: int) =
     let dataLength = length - 4
@@ -175,7 +175,7 @@ let readCueSheetTrack (f: ReadOnlySpan<byte>) =
       TrackIndexPoints = ReadOnlySpan<byte>.Empty }
 
 // TODO
-let readMetadataBlockCueSheet (f: ReadOnlySpan<byte>) (length: int) : MetadataBlockCueSheet =
+let readMetadataBlockCueSheet (f: ReadOnlySpan<byte>) (length: int) : MetadataBlockCueSheetValue =
     let nope =
         raise (NotImplementedException())
         ()
