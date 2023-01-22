@@ -3,7 +3,7 @@ module Safir.Audio.Flac
 open System
 open System.Buffers.Binary
 
-let private magic = [| 0x66uy; 0x4Cuy; 0x61uy; 0x43uy |]
+let private magic = "fLaC"B
 
 // TODO: Use these min/max block sizes for validation/whatever
 // https://xiph.org/flac/format.html#METADATA_BLOCK_STREAMINFO
@@ -279,7 +279,7 @@ let readMetadataBlocks (f: ReadOnlySpan<byte>) =
 
     blocks |> List.rev
 
-let readFlacStream (f: ReadOnlySpan<byte>) =
+let readStream (f: ReadOnlySpan<byte>) =
     let magic = readMagic f
     let streamInfo = readMetadataBlock (f.Slice(4))
 
