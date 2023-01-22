@@ -45,6 +45,8 @@ let readMetadataBlockHeader (f: ReadOnlySpan<byte>) =
       BlockType = bt
       Length = length }
 
+let readMd5Signature (f: ReadOnlySpan<byte>) = Convert.ToHexString(f)
+
 let readMetadataBlockStreamInfo (f: ReadOnlySpan<byte>) =
     if f.Length < 34 then
         throw "Invalid stream info block length"
@@ -65,7 +67,7 @@ let readMetadataBlockStreamInfo (f: ReadOnlySpan<byte>) =
     let e = uint64 f[17]
     let samples = a + b + c + d + e
 
-    let md5 = f.Slice(18, 16).ToArray()
+    let md5 = f.Slice(18, 16)
 
     { MinBlockSize = minBlockSize
       MaxBlockSize = maxBlockSize
@@ -95,8 +97,8 @@ let readMetadataBlockApplication (f: ReadOnlySpan<byte>) (length: int) =
     if dataLength % 8 <> 0 then
         throw "Application block length must be a multiple of 8"
 
-    let id = BinaryPrimitives.ReadInt32BigEndian(f.Slice(0, 4))
-    let data = f.Slice(4, dataLength).ToArray()
+    let id = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(0, 4))
+    let data = f.Slice(4, dataLength)
 
     { ApplicationId = id
       ApplicationData = data }
@@ -112,19 +114,21 @@ let readMetadataBlockSeekTable (f: ReadOnlySpan<byte>) (length: int) =
     if length % 18 <> 0 then
         throw "Seek table length must be a multiple of 18"
 
-    let n = length / 18
-    let points = Array.zeroCreate n
+    // TODO: Where to put this logic
+    // let n = length / 18
+    // let points = Array.zeroCreate n
+    //
+    // for i = 0 to n - 1 do
+    //     points[i] <- readSeekPoint (f.Slice(i * 18, 18))
 
-    for i = 0 to n - 1 do
-        points[i] <- readSeekPoint (f.Slice(i * 18, 18))
-
-    MetadataBlockSeekTable points
+    { Count = length / 18
+      SeekPoints = f.Slice(0, length) }
 
 let readMetadataBlockVorbisComment (f: ReadOnlySpan<byte>) (length: int) =
     if int64 length >= (pown 2L 24) - 1L then
         throw "Invalid vorbis comment block length"
 
-    Vorbis.readVorbisCommentHeader f length
+    Vorbis.readCommentHeader f length
 
 let readCueSheetTrackIndex (f: ReadOnlySpan<byte>) =
     let offset = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
@@ -139,7 +143,7 @@ let readCueSheetTrackIndex (f: ReadOnlySpan<byte>) =
 let readCueSheetTrack (f: ReadOnlySpan<byte>) =
     let trackOffset = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
     let trackNumber = uint16 f[8]
-    let isrc = f.Slice(9, 12 * 8).ToArray()
+    let isrc = f.Slice(9, 12 * 8)
 
     let mutable offset = 9 + (12 * 8)
 
@@ -168,10 +172,21 @@ let readCueSheetTrack (f: ReadOnlySpan<byte>) =
       IsAudio = isAudio
       PreEmphasis = preEmphasis
       IndexPoints = n
-      TrackIndexPoints = ctis }
+      TrackIndexPoints = ReadOnlySpan<byte>.Empty }
 
 // TODO
-let readMetadataBlockCueSheet (f: ReadOnlySpan<byte>) (length: int) = raise (NotImplementedException())
+let readMetadataBlockCueSheet (f: ReadOnlySpan<byte>) (length: int) : MetadataBlockCueSheet =
+    let nope =
+        raise (NotImplementedException())
+        ()
+
+    nope
+
+    { Tracks = ReadOnlySpan<byte>.Empty
+      CatalogNumber = ReadOnlySpan<byte>.Empty
+      TotalTracks = 0us
+      IsCompactDisc = false
+      LeadInSamples = 0UL }
 
 let readMetadataBlockPicture (f: ReadOnlySpan<byte>) (length: int) =
     if f.Length < length then
@@ -187,14 +202,14 @@ let readMetadataBlockPicture (f: ReadOnlySpan<byte>) (length: int) =
     o <- o + 4
 
     let mimeLengthInt = mimeLength |> int
-    let mimeType = f.Slice(o, mimeLengthInt).ToArray()
+    let mimeType = f.Slice(o, mimeLengthInt)
     o <- o + mimeLengthInt
 
     let descriptionLength = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
     o <- o + 4
 
     let descriptionLenghtInt = descriptionLength |> int
-    let description = f.Slice(o, descriptionLenghtInt).ToArray()
+    let description = f.Slice(o, descriptionLenghtInt)
     o <- o + descriptionLenghtInt
 
     let width = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
@@ -212,7 +227,7 @@ let readMetadataBlockPicture (f: ReadOnlySpan<byte>) (length: int) =
     let dataLength = BinaryPrimitives.ReadUInt32BigEndian(f.Slice(o, 4))
 
     let dataLengthInt = dataLength |> int
-    let data = f.Slice(o, dataLengthInt).ToArray()
+    let data = f.Slice(o, dataLengthInt)
 
     { Type = pictureType
       MimeLength = mimeLength
@@ -234,8 +249,15 @@ let readMetadataBlockData (f: ReadOnlySpan<byte>) (length: int) =
     | BlockType.VorbisComment -> VorbisComment(readMetadataBlockVorbisComment f length)
     | BlockType.CueSheet -> CueSheet(readMetadataBlockCueSheet f length)
     | BlockType.Picture -> Picture(readMetadataBlockPicture f length)
-    | BlockType.Invalid -> invalidOp "Invalid metadata block type"
-    | _ -> Skipped(f.Slice(0, length).ToArray())
+    | BlockType.Invalid ->
+        let nope =
+            invalidOp "Invalid metadata block type"
+            ()
+
+        nope
+
+        Skipped(f.Slice(0))
+    | _ -> Skipped(f.Slice(0, length))
 
 let readMetadataBlock (f: ReadOnlySpan<byte>) =
     let header = readMetadataBlockHeader f
@@ -248,12 +270,12 @@ let readMetadataBlocks (f: ReadOnlySpan<byte>) =
     let mutable cont = true
     let mutable offset = 0
 
-    while cont do
-        let block = readMetadataBlock (f.Slice(offset))
-
-        blocks <- block :: blocks
-        offset <- offset + block.Header.Length + 4
-        cont <- not block.Header.LastBlock
+    // while cont do
+    //     let block = readMetadataBlock (f.Slice(offset))
+    //
+    //     blocks <- block :: blocks
+    //     offset <- offset + block.Header.Length + 4
+    //     cont <- not block.Header.LastBlock
 
     blocks |> List.rev
 
@@ -266,4 +288,4 @@ let readFlacStream (f: ReadOnlySpan<byte>) =
 
     let blocks = readMetadataBlocks (f.Slice(streamInfo.Header.Length + 8))
 
-    { Metadata = streamInfo :: blocks }
+    { Metadata = List.Empty }
