@@ -9,6 +9,24 @@ type VorbisCommentValue =
       Name: ReadOnlySpan<byte>
       Value: ReadOnlySpan<byte> }
 
+type VorbisComment =
+    | Title of string
+    | Version of string
+    | Album of string
+    | TrackNumber of string
+    | Artist of string
+    | Performer of string
+    | Copyright of string
+    | License of string
+    | Organization of string
+    | Description of string
+    | Genre of string
+    | Date of string
+    | Location of string
+    | Contact of string
+    | Isrc of string
+    | Other of Name: string * Value: string
+
 [<Struct; IsReadOnly; IsByRefLike>]
 type VorbisCommentHeaderValue =
     { VendorLength: uint32
@@ -16,8 +34,6 @@ type VorbisCommentHeaderValue =
       UserCommentListLength: uint32
       UserComments: ReadOnlySpan<byte> }
 
-[<Struct; IsReadOnly; IsByRefLike>]
-type VorbisCommentValueCs(comment: VorbisCommentValue) =
-    member this.Length = comment.Length
-    member this.Name = comment.Name
-    member this.Value = comment.Value
+type VorbisCommentHeader =
+    { Vendor: string
+      UserComments: VorbisComment list }

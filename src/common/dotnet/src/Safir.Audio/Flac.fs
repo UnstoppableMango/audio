@@ -47,7 +47,7 @@ let readMetadataBlockHeader (f: ReadOnlySpan<byte>) =
 
 let readMd5Signature (f: ReadOnlySpan<byte>) = Convert.ToHexString(f)
 
-let readMetadataBlockStreamInfo (f: ReadOnlySpan<byte>) =
+let readMetadataBlockStreamInfo (f: ReadOnlySpan<byte>) : MetadataBlockStreamInfoValue =
     if f.Length < 34 then
         throw "Invalid stream info block length"
 
@@ -91,7 +91,7 @@ let readMetadataBlockPadding (f: ReadOnlySpan<byte>) (length: int) =
 
     MetadataBlockPaddingValue length
 
-let readMetadataBlockApplication (f: ReadOnlySpan<byte>) (length: int) =
+let readMetadataBlockApplication (f: ReadOnlySpan<byte>) (length: int) : MetadataBlockApplicationValue =
     let dataLength = length - 4
 
     if dataLength % 8 <> 0 then
@@ -103,7 +103,7 @@ let readMetadataBlockApplication (f: ReadOnlySpan<byte>) (length: int) =
     { ApplicationId = id
       ApplicationData = data }
 
-let readSeekPoint (f: ReadOnlySpan<byte>) =
+let readSeekPoint (f: ReadOnlySpan<byte>) : SeekPointValue =
     if f.Length < 18 then throw "Invalid seek point length"
 
     { SampleNumber = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
@@ -130,7 +130,7 @@ let readMetadataBlockVorbisComment (f: ReadOnlySpan<byte>) (length: int) =
 
     Vorbis.readCommentHeader f length
 
-let readCueSheetTrackIndex (f: ReadOnlySpan<byte>) =
+let readCueSheetTrackIndex (f: ReadOnlySpan<byte>) : CueSheetTrackIndexValue =
     let offset = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
     let indexPoint = uint16 f[8]
 
@@ -243,12 +243,12 @@ let readMetadataBlockPicture (f: ReadOnlySpan<byte>) (length: int) =
 
 let readMetadataBlockData (f: ReadOnlySpan<byte>) (length: int) =
     function
-    | BlockType.StreamInfo -> StreamInfo(readMetadataBlockStreamInfo f)
-    | BlockType.Padding -> Padding(readMetadataBlockPadding f length)
-    | BlockType.SeekTable -> SeekTable(readMetadataBlockSeekTable f length)
-    | BlockType.VorbisComment -> VorbisComment(readMetadataBlockVorbisComment f length)
-    | BlockType.CueSheet -> CueSheet(readMetadataBlockCueSheet f length)
-    | BlockType.Picture -> Picture(readMetadataBlockPicture f length)
+    | BlockType.StreamInfo -> MetadataBlockDataValue.StreamInfo(readMetadataBlockStreamInfo f)
+    | BlockType.Padding -> MetadataBlockDataValue.Padding(readMetadataBlockPadding f length)
+    | BlockType.SeekTable -> MetadataBlockDataValue.SeekTable(readMetadataBlockSeekTable f length)
+    | BlockType.VorbisComment -> MetadataBlockDataValue.VorbisComment(readMetadataBlockVorbisComment f length)
+    | BlockType.CueSheet -> MetadataBlockDataValue.CueSheet(readMetadataBlockCueSheet f length)
+    | BlockType.Picture -> MetadataBlockDataValue.Picture(readMetadataBlockPicture f length)
     | BlockType.Invalid ->
         let nope =
             invalidOp "Invalid metadata block type"
@@ -256,10 +256,10 @@ let readMetadataBlockData (f: ReadOnlySpan<byte>) (length: int) =
 
         nope
 
-        Skipped(f.Slice(0))
-    | _ -> Skipped(f.Slice(0, length))
+        MetadataBlockDataValue.Skipped(f.Slice(0))
+    | _ -> MetadataBlockDataValue.Skipped(f.Slice(0, length))
 
-let readMetadataBlock (f: ReadOnlySpan<byte>) =
+let readMetadataBlock (f: ReadOnlySpan<byte>) : MetadataBlockValue =
     let header = readMetadataBlockHeader f
     let data = readMetadataBlockData (f.Slice(4)) header.Length header.BlockType
 
