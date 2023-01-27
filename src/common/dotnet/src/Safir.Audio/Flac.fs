@@ -5,11 +5,6 @@ open System.Buffers.Binary
 
 let private magic = "fLaC"B
 
-// TODO: Use these min/max block sizes for validation/whatever
-// https://xiph.org/flac/format.html#METADATA_BLOCK_STREAMINFO
-let private minBlockSize = 15
-let private maxBlockSize = 65535
-
 let private throw m : unit = invalidOp m
 
 let private readInt3 (bytes: ReadOnlySpan<byte>) =
