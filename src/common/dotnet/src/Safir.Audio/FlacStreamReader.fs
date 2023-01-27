@@ -58,9 +58,10 @@ type FlacStreamReader(buffer: ReadOnlySpan<byte>) =
 
     member this.Value = this._value
 
-    member private this.Advance(length: int) =
+    member private this.Read(position: StreamPosition, length: int) =
         this._value <- buffer.Slice(this._consumed, length)
         this._consumed <- this._consumed + length
+        this._position <- position
 
     member private this.StartMetadataBlockData() =
         match this._blockType with
@@ -155,11 +156,6 @@ type FlacStreamReader(buffer: ReadOnlySpan<byte>) =
         | ValueSome n, ValueSome i when i < n - 1 -> this.StartCueSheetTrackIndexPoint()
         | ValueSome n, ValueSome i when i = n - 1 -> this.EndCueSheetTrack()
         | _, _ -> readerEx "Invalid reader state"
-
-    member private this.Read(position: StreamPosition, length: int) =
-        this._value <- buffer.Slice(this._consumed, length)
-        this._consumed <- this._consumed + length
-        this._position <- position
 
     member this.Read() =
         match this._position with
