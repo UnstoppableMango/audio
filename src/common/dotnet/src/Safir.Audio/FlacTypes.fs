@@ -55,6 +55,7 @@ type StreamPosition =
     | PictureNumberOfColors = 48
     | PictureDataLength = 49
     | PictureData = 50
+    | End = 420
 
 type BlockType =
     | StreamInfo = 0
@@ -65,6 +66,38 @@ type BlockType =
     | CueSheet = 5
     | Picture = 6
     | Invalid = 127
+
+[<Struct; IsReadOnly>]
+type FlacStreamState =
+    { BlockLength: ValueOption<uint32>
+      BlockType: ValueOption<BlockType>
+      LastMetadataBlock: ValueOption<bool>
+      NumberOfSeekPoints: ValueOption<uint32>
+      SeekTableIndex: ValueOption<uint32>
+      NumberOfUserComments: ValueOption<uint32>
+      UserCommentIndex: ValueOption<uint32>
+      NumberOfCueSheetTracks: ValueOption<int>
+      CueSheetTrackIndex: ValueOption<int>
+      NumberOfCueSheetTrackIndexPoints: ValueOption<int>
+      CueSheetTrackIndexPointIndex: ValueOption<int>
+      Position: StreamPosition }
+
+    static member Empty =
+        { BlockLength = ValueNone
+          BlockType = ValueNone
+          LastMetadataBlock = ValueNone
+          NumberOfSeekPoints = ValueNone
+          SeekTableIndex = ValueNone
+          NumberOfUserComments = ValueNone
+          UserCommentIndex = ValueNone
+          NumberOfCueSheetTracks = ValueNone
+          CueSheetTrackIndex = ValueNone
+          NumberOfCueSheetTrackIndexPoints = ValueNone
+          CueSheetTrackIndexPointIndex = ValueNone
+          Position = StreamPosition.Start }
+
+    static member Marker =
+        { FlacStreamState.Empty with Position = StreamPosition.Marker }
 
 [<Struct; IsReadOnly; IsByRefLike>]
 type MetadataBlockHeaderValue =
