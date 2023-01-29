@@ -72,28 +72,28 @@ type FlacStreamState =
     { BlockLength: ValueOption<uint32>
       BlockType: ValueOption<BlockType>
       LastMetadataBlock: ValueOption<bool>
-      NumberOfSeekPoints: ValueOption<uint32>
-      SeekTableIndex: ValueOption<uint32>
-      NumberOfUserComments: ValueOption<uint32>
-      UserCommentIndex: ValueOption<uint32>
-      NumberOfCueSheetTracks: ValueOption<int>
-      CueSheetTrackIndex: ValueOption<int>
-      NumberOfCueSheetTrackIndexPoints: ValueOption<int>
-      CueSheetTrackIndexPointIndex: ValueOption<int>
+      SeekPointCount: ValueOption<uint32>
+      SeekPointOffset: ValueOption<uint32>
+      UserCommentCount: ValueOption<uint32>
+      UserCommentOffset: ValueOption<uint32>
+      CueSheetTrackCount: ValueOption<int>
+      CueSheetTrackOffset: ValueOption<int>
+      CueSheetTrackIndexCount: ValueOption<int>
+      CueSheetTrackIndexOffset: ValueOption<int>
       Position: StreamPosition }
 
     static member Empty =
         { BlockLength = ValueNone
           BlockType = ValueNone
           LastMetadataBlock = ValueNone
-          NumberOfSeekPoints = ValueNone
-          SeekTableIndex = ValueNone
-          NumberOfUserComments = ValueNone
-          UserCommentIndex = ValueNone
-          NumberOfCueSheetTracks = ValueNone
-          CueSheetTrackIndex = ValueNone
-          NumberOfCueSheetTrackIndexPoints = ValueNone
-          CueSheetTrackIndexPointIndex = ValueNone
+          SeekPointCount = ValueNone
+          SeekPointOffset = ValueNone
+          UserCommentCount = ValueNone
+          UserCommentOffset = ValueNone
+          CueSheetTrackCount = ValueNone
+          CueSheetTrackOffset = ValueNone
+          CueSheetTrackIndexCount = ValueNone
+          CueSheetTrackIndexOffset = ValueNone
           Position = StreamPosition.Start }
 
     static member Marker =

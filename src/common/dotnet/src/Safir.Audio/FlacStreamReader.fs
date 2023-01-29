@@ -21,14 +21,14 @@ type FlacStreamReader =
     val mutable private _blockLength: ValueOption<uint32>
     val mutable private _blockType: ValueOption<BlockType>
     val mutable private _lastMetadataBlock: ValueOption<bool>
-    val mutable private _numberOfSeekPoints: ValueOption<uint32>
-    val mutable private _seekTableIndex: ValueOption<uint32>
-    val mutable private _numberOfUserComments: ValueOption<uint32>
-    val mutable private _userCommentIndex: ValueOption<uint32>
-    val mutable private _numberOfCueSheetTracks: ValueOption<int>
-    val mutable private _cueSheetTrackIndex: ValueOption<int>
-    val mutable private _numberOfCueSheetTrackIndexPoints: ValueOption<int>
-    val mutable private _cueSheetTrackIndexPointIndex: ValueOption<int> // I hate naming things
+    val mutable private _seekPointCount: ValueOption<uint32>
+    val mutable private _seekPointOffset: ValueOption<uint32>
+    val mutable private _userCommentCount: ValueOption<uint32>
+    val mutable private _userCommentOffset: ValueOption<uint32>
+    val mutable private _cueSheetTrackCount: ValueOption<int>
+    val mutable private _cueSheetTrackOffset: ValueOption<int>
+    val mutable private _cueSheetTrackIndexCount: ValueOption<int>
+    val mutable private _cueSheetTrackIndexOffset: ValueOption<int>
 
     new(buffer: ReadOnlySpan<byte>, state: FlacStreamState) =
         { _buffer = buffer
@@ -38,14 +38,14 @@ type FlacStreamReader =
           _blockLength = state.BlockLength
           _blockType = state.BlockType
           _lastMetadataBlock = state.LastMetadataBlock
-          _numberOfSeekPoints = state.NumberOfSeekPoints
-          _seekTableIndex = state.SeekTableIndex
-          _numberOfUserComments = state.NumberOfUserComments
-          _userCommentIndex = state.UserCommentIndex
-          _numberOfCueSheetTracks = state.NumberOfCueSheetTracks
-          _cueSheetTrackIndex = state.CueSheetTrackIndex
-          _numberOfCueSheetTrackIndexPoints = state.NumberOfCueSheetTrackIndexPoints
-          _cueSheetTrackIndexPointIndex = state.CueSheetTrackIndexPointIndex }
+          _seekPointCount = state.SeekPointCount
+          _seekPointOffset = state.SeekPointOffset
+          _userCommentCount = state.UserCommentCount
+          _userCommentOffset = state.UserCommentOffset
+          _cueSheetTrackCount = state.CueSheetTrackCount
+          _cueSheetTrackOffset = state.CueSheetTrackOffset
+          _cueSheetTrackIndexCount = state.CueSheetTrackIndexCount
+          _cueSheetTrackIndexOffset = state.CueSheetTrackIndexOffset }
 
     new(buffer: ReadOnlySpan<byte>) = FlacStreamReader(buffer, FlacStreamState.Empty)
 
@@ -157,7 +157,7 @@ type FlacStreamReader =
             | BlockType.StreamInfo -> this.ReadMinimumBlockSize()
             | BlockType.Padding -> this.ReadMetadataBlockPadding()
             | BlockType.Application -> this.Read(StreamPosition.ApplicationId, 4)
-            | BlockType.SeekTable -> this.StartSeekPoint()
+            | BlockType.SeekTable -> this.StartSeekTable()
             | BlockType.VorbisComment -> this.Read(StreamPosition.VendorLength, 4)
             | BlockType.CueSheet -> this.ReadCueSheetCatalogNumber()
             | BlockType.Picture -> this.Read(StreamPosition.PictureType, 4)
@@ -254,22 +254,26 @@ type FlacStreamReader =
             this._consumed <- this._consumed + l
             this._position <- StreamPosition.ApplicationData
 
-    member private this.StartSeekPoint() =
+    member private this.StartSeekTable() =
         match this._blockLength with
         | ValueNone -> readerEx "Unknown block length"
         | ValueSome length when length % 18u <> 0u -> readerEx "Invalid block length"
-        | ValueSome length -> this._numberOfSeekPoints <- ValueSome(length / 18u)
+        | ValueSome length -> this._seekPointCount <- ValueSome(length / 18u)
 
+        this._seekPointOffset <- ValueSome 0u
+        this.StartSeekPoint()
+
+    member private this.StartSeekPoint() =
         this.Read(StreamPosition.SeekPointSampleNumber, 8)
 
-        match this._seekTableIndex with
-        | ValueNone -> this._seekTableIndex <- ValueSome 0u
-        | ValueSome i -> this._seekTableIndex <- ValueSome(i + 1u)
+        match this._seekPointOffset with
+        | ValueNone -> readerEx "Invalid reader state"
+        | ValueSome i -> this._seekPointOffset <- ValueSome(i + 1u)
 
     member private this.EndSeekPoint() =
-        match this._numberOfSeekPoints, this._seekTableIndex with
-        | ValueSome n, ValueSome i when i < n - 1u -> this.StartSeekPoint()
-        | ValueSome n, ValueSome i when i = n - 1u -> this.EndMetadataBlockData()
+        match this._seekPointCount, this._seekPointOffset with
+        | ValueSome n, ValueSome i when i < n -> this.StartSeekPoint()
+        | ValueSome n, ValueSome i when i = n -> this.EndMetadataBlockData()
         | _, _ -> readerEx "Invalid reader state"
 
     member private this.ReadVendorString() =
@@ -290,8 +294,8 @@ type FlacStreamReader =
 
         let length = BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
-        this._numberOfUserComments <- ValueSome length
-
+        this._userCommentCount <- ValueSome length
+        this._userCommentOffset <- ValueSome 0u
         this.Read(StreamPosition.UserCommentLength, 4)
 
     member private this.ReadUserComment() =
@@ -305,14 +309,14 @@ type FlacStreamReader =
         this._position <- StreamPosition.UserComment
         this._consumed <- this._consumed + length
 
-        match this._userCommentIndex with
-        | ValueNone -> this._userCommentIndex <- ValueSome 0u
-        | ValueSome i -> this._userCommentIndex <- ValueSome(i + 1u)
+        match this._userCommentOffset with
+        | ValueNone -> readerEx "Invalid reader state"
+        | ValueSome i -> this._userCommentOffset <- ValueSome(i + 1u)
 
     member private this.EndUserComment() =
-        match this._numberOfUserComments, this._userCommentIndex with
-        | ValueSome n, ValueSome i when i < n - 1u -> this.Read(StreamPosition.UserCommentLength, 4)
-        | ValueSome n, ValueSome i when i = n - 1u -> this.EndMetadataBlockData()
+        match this._userCommentCount, this._userCommentOffset with
+        | ValueSome n, ValueSome i when i < n -> this.Read(StreamPosition.UserCommentLength, 4)
+        | ValueSome n, ValueSome i when i = n -> this.EndMetadataBlockData()
         | _, _ -> readerEx "Invalid reader state"
 
     // TODO: Validate for CD-DA; offset % 588 = 0
@@ -412,25 +416,23 @@ type FlacStreamReader =
         this._value <- ReadOnlySpan<byte>(&local)
         this._consumed <- this._consumed + 1
         this._position <- StreamPosition.NumberOfTracks
+        this._cueSheetTrackCount <- ValueSome(int local)
+        this._cueSheetTrackOffset <- ValueSome 0
 
     member private this.StartCueSheetTrack() =
         if this._value.Length < 1 then
             readerEx "Invalid reader state"
 
-        let length = int this._value[0]
-
-        this._numberOfCueSheetTracks <- ValueSome length
-
-        match this._cueSheetTrackIndex with
-        | ValueNone -> this._cueSheetTrackIndex <- ValueSome 0
-        | ValueSome i -> this._cueSheetTrackIndex <- ValueSome(i + 1)
-
         this.ReadCueSheetTrackOffset()
 
+        match this._cueSheetTrackOffset with
+        | ValueNone -> readerEx "Invalid reader state"
+        | ValueSome i -> this._cueSheetTrackOffset <- ValueSome(i + 1)
+
     member private this.EndCueSheetTrack() =
-        match this._numberOfCueSheetTracks, this._cueSheetTrackIndex with
-        | ValueSome n, ValueSome i when i < n - 1 -> this.StartCueSheetTrack()
-        | ValueSome n, ValueSome i when i = n - 1 -> this.EndMetadataBlockData()
+        match this._cueSheetTrackCount, this._cueSheetTrackOffset with
+        | ValueSome n, ValueSome i when i < n -> this.StartCueSheetTrack()
+        | ValueSome n, ValueSome i when i = n -> this.EndMetadataBlockData()
         | _, _ -> readerEx "Invalid reader state"
 
     member private this.ReadCueSheetNumberOfTrackIndexPoints() =
@@ -443,25 +445,22 @@ type FlacStreamReader =
         this._value <- ReadOnlySpan<byte>(&local)
         this._consumed <- this._consumed + 1
         this._position <- StreamPosition.NumberOfTrackIndexPoints
+        this._cueSheetTrackIndexCount <- ValueSome(int local)
 
     member private this.StartCueSheetTrackIndexPoint() =
         if this._value.Length < 1 then
             readerEx "Invalid reader state"
 
-        let length = int this._value[0]
-
-        this._numberOfCueSheetTrackIndexPoints <- ValueSome length
-
-        match this._cueSheetTrackIndexPointIndex with
-        | ValueNone -> this._cueSheetTrackIndexPointIndex <- ValueSome 0
-        | ValueSome i -> this._cueSheetTrackIndexPointIndex <- ValueSome(i + 1)
-
         this.ReadCueSheetTrackIndexOffset()
 
+        match this._cueSheetTrackIndexOffset with
+        | ValueNone -> readerEx "Invalid reader state"
+        | ValueSome i -> this._cueSheetTrackIndexOffset <- ValueSome(i + 1)
+
     member private this.EndCueSheetTrackIndexPoint() =
-        match this._numberOfCueSheetTrackIndexPoints, this._cueSheetTrackIndexPointIndex with
-        | ValueSome n, ValueSome i when i < n - 1 -> this.StartCueSheetTrackIndexPoint()
-        | ValueSome n, ValueSome i when i = n - 1 -> this.EndCueSheetTrack()
+        match this._cueSheetTrackIndexCount, this._cueSheetTrackIndexOffset with
+        | ValueSome n, ValueSome i when i < n -> this.StartCueSheetTrackIndexPoint()
+        | ValueSome n, ValueSome i when i = n -> this.EndCueSheetTrack()
         | _, _ -> readerEx "Invalid reader state"
 
     member private this.ReadMimeType() =
@@ -469,7 +468,6 @@ type FlacStreamReader =
             readerEx "Invalid reader state"
 
         let length = BinaryPrimitives.ReadUInt32BigEndian(this._value) |> int
-
         let local = this._buffer.Slice(this._consumed, length)
 
         this._value <- local
