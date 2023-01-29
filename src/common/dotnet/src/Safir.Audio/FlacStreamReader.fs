@@ -151,7 +151,7 @@ type FlacStreamReader =
 
     member private this.StartMetadataBlockData() =
         match this._blockType with
-        | ValueNone -> readerEx "Unknown block type"
+        | ValueNone -> readerEx "Expected a value for BlockType"
         | ValueSome blockType ->
             match blockType with
             | BlockType.StreamInfo -> this.ReadMinimumBlockSize()
@@ -166,7 +166,7 @@ type FlacStreamReader =
 
     member private this.EndMetadataBlockData() =
         match this._lastMetadataBlock with
-        | ValueNone -> readerEx "Unknown metadata position"
+        | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
         | ValueSome false -> this.ReadLastMetadataBlockFlag()
         | ValueSome true -> // We currently don't support anything past metadata
             this._value <- ReadOnlySpan<byte>.Empty
@@ -177,7 +177,8 @@ type FlacStreamReader =
         let local = this._buffer.Slice(this._consumed, 2)
         let blockSize = BinaryPrimitives.ReadUInt16BigEndian(local)
 
-        if blockSize <= 15us then readerEx "Invalid block size"
+        if blockSize <= 15us then
+            readerEx "Invalid minimum block size"
 
         this._value <- local
         this._consumed <- this._consumed + 2
@@ -225,7 +226,7 @@ type FlacStreamReader =
 
     member private this.ReadMetadataBlockPadding() =
         match this._blockLength with
-        | ValueNone -> readerEx "Unknown block length"
+        | ValueNone -> readerEx "Expected a value for BlockLength"
         | ValueSome length ->
             let l = int length
 
@@ -243,7 +244,7 @@ type FlacStreamReader =
 
     member private this.ReadApplicationData() =
         match this._blockLength with
-        | ValueNone -> readerEx "Unknown block length"
+        | ValueNone -> readerEx "Expected a value for BlockLength"
         | ValueSome length ->
             let l = int length - 4
 
@@ -256,7 +257,7 @@ type FlacStreamReader =
 
     member private this.StartSeekTable() =
         match this._blockLength with
-        | ValueNone -> readerEx "Unknown block length"
+        | ValueNone -> readerEx "Expected a value for BlockLength"
         | ValueSome length when length % 18u <> 0u -> readerEx "Invalid block length"
         | ValueSome length -> this._seekPointCount <- ValueSome(length / 18u)
 
@@ -267,18 +268,18 @@ type FlacStreamReader =
         this.Read(StreamPosition.SeekPointSampleNumber, 8)
 
         match this._seekPointOffset with
-        | ValueNone -> readerEx "Invalid reader state"
+        | ValueNone -> readerEx "Expected a value for SeekPointOffset"
         | ValueSome i -> this._seekPointOffset <- ValueSome(i + 1u)
 
     member private this.EndSeekPoint() =
         match this._seekPointCount, this._seekPointOffset with
         | ValueSome n, ValueSome i when i < n -> this.StartSeekPoint()
         | ValueSome n, ValueSome i when i = n -> this.EndMetadataBlockData()
-        | _, _ -> readerEx "Invalid reader state"
+        | _, _ -> readerEx "Expected values for SeekPointCount and SeekPointOffset"
 
     member private this.ReadVendorString() =
         if this._value.Length < 4 then
-            readerEx "Invalid reader state"
+            readerEx "Invalid VendorStringLength"
 
         // TODO: DRY
         let length = BinaryPrimitives.ReadUInt32LittleEndian(this._value) |> int
@@ -290,7 +291,7 @@ type FlacStreamReader =
 
     member private this.StartUserCommentList() =
         if this._value.Length < 4 then
-            readerEx "Invalid reader state"
+            readerEx "Invalid UserCommentListLength"
 
         let length = BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
@@ -300,7 +301,7 @@ type FlacStreamReader =
 
     member private this.ReadUserComment() =
         if this._value.Length < 4 then
-            readerEx "Invalid reader state"
+            readerEx "Invalid UserCommentLength"
 
         let length = BinaryPrimitives.ReadUInt32LittleEndian(this._value) |> int
         let local = this._buffer.Slice(this._consumed, length)
@@ -310,14 +311,14 @@ type FlacStreamReader =
         this._consumed <- this._consumed + length
 
         match this._userCommentOffset with
-        | ValueNone -> readerEx "Invalid reader state"
+        | ValueNone -> readerEx "Expected a value for UserCommentOffset"
         | ValueSome i -> this._userCommentOffset <- ValueSome(i + 1u)
 
     member private this.EndUserComment() =
         match this._userCommentCount, this._userCommentOffset with
         | ValueSome n, ValueSome i when i < n -> this.Read(StreamPosition.UserCommentLength, 4)
         | ValueSome n, ValueSome i when i = n -> this.EndMetadataBlockData()
-        | _, _ -> readerEx "Invalid reader state"
+        | _, _ -> readerEx "Expected values for UserCommentCount and UserCommentOffset"
 
     // TODO: Validate for CD-DA; offset % 588 = 0
     member private this.ReadCueSheetTrackIndexOffset() =
@@ -420,9 +421,6 @@ type FlacStreamReader =
         this._cueSheetTrackOffset <- ValueSome 0
 
     member private this.StartCueSheetTrack() =
-        if this._value.Length < 1 then
-            readerEx "Invalid reader state"
-
         this.ReadCueSheetTrackOffset()
 
         match this._cueSheetTrackOffset with
@@ -433,7 +431,7 @@ type FlacStreamReader =
         match this._cueSheetTrackCount, this._cueSheetTrackOffset with
         | ValueSome n, ValueSome i when i < n -> this.StartCueSheetTrack()
         | ValueSome n, ValueSome i when i = n -> this.EndMetadataBlockData()
-        | _, _ -> readerEx "Invalid reader state"
+        | _, _ -> readerEx "Expected values for CueSheetTrackCount and CueSheetTrackOffset"
 
     member private this.ReadCueSheetNumberOfTrackIndexPoints() =
         let local = this._buffer[this._consumed]
@@ -448,24 +446,21 @@ type FlacStreamReader =
         this._cueSheetTrackIndexCount <- ValueSome(int local)
 
     member private this.StartCueSheetTrackIndexPoint() =
-        if this._value.Length < 1 then
-            readerEx "Invalid reader state"
-
         this.ReadCueSheetTrackIndexOffset()
 
         match this._cueSheetTrackIndexOffset with
-        | ValueNone -> readerEx "Invalid reader state"
+        | ValueNone -> readerEx "Expected a value for CueSheetTrackIndexOffset"
         | ValueSome i -> this._cueSheetTrackIndexOffset <- ValueSome(i + 1)
 
     member private this.EndCueSheetTrackIndexPoint() =
         match this._cueSheetTrackIndexCount, this._cueSheetTrackIndexOffset with
         | ValueSome n, ValueSome i when i < n -> this.StartCueSheetTrackIndexPoint()
         | ValueSome n, ValueSome i when i = n -> this.EndCueSheetTrack()
-        | _, _ -> readerEx "Invalid reader state"
+        | _, _ -> readerEx "Expected values for CueSheetTrackIndexCount and CueSheetTrackIndexOffset"
 
     member private this.ReadMimeType() =
         if this._value.Length < 4 then
-            readerEx "Invalid reader state"
+            readerEx "Mime type length is too short"
 
         let length = BinaryPrimitives.ReadUInt32BigEndian(this._value) |> int
         let local = this._buffer.Slice(this._consumed, length)
@@ -476,7 +471,7 @@ type FlacStreamReader =
 
     member private this.ReadPictureDescription() =
         if this._value.Length < 4 then
-            readerEx "Invalid reader state"
+            readerEx "Picture description length is too short"
 
         let length = BinaryPrimitives.ReadUInt32BigEndian(this._value) |> int
 
@@ -488,7 +483,7 @@ type FlacStreamReader =
 
     member private this.ReadPictureData() =
         if this._value.Length < 4 then
-            readerEx "Invalid reader state"
+            readerEx "Picture data length is too short"
 
         let length = BinaryPrimitives.ReadUInt32BigEndian(this._value) |> int
 
@@ -500,62 +495,62 @@ type FlacStreamReader =
 
     member this.GetLastMetadataBlockFlag() =
         if this._position <> StreamPosition.LastMetadataBlockFlag then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at LastMetadataBlockFlag"
 
         this._value[0] >>> 7 = 0x1uy
 
     member this.GetMetadataBlockType() =
         if this._position <> StreamPosition.MetadataBlockType then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at MetadataBlockType"
 
         let blockType = this._value[0] &&& 0x7Fuy |> int
         enum<BlockType> blockType
 
     member this.GetDataBlockLength() =
         if this._position <> StreamPosition.DataBlockLength then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at DataBlockLength"
 
         readUInt32 this._value
 
     member this.GetMinimumBlockSize() =
         if this._position <> StreamPosition.MinimumBlockSize then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at MinimumBlockSize"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
 
     member this.GetMaximumBlockSize() =
         if this._position <> StreamPosition.MaximumBlockSize then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at MaximumBlockSize"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
 
     member this.GetMinimumFrameSize() =
         if this._position <> StreamPosition.MinimumFrameSize then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at MinimumFrameSize"
 
         readUInt32 this._value
 
     member this.GetMaximumFrameSize() =
         if this._position <> StreamPosition.MaximumFrameSize then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at MaximumFrameSize"
 
         readUInt32 this._value
 
     member this.GetSampleRate() =
         if this._position <> StreamPosition.StreamInfoSampleRate then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at StreamInfoSampleRate"
 
         readUInt32 this._value >>> 4
 
     member this.GetChannels() =
         if this._position <> StreamPosition.NumberOfChannels then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at NumberOfChannels"
 
         uint16 (this._value[0] &&& 0x0Euy >>> 1) + 1us
 
     member this.GetBitsPerSample() =
         if this._position <> StreamPosition.BitsPerSample then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at BitsPerSample"
 
         let a = uint16 (this._value[0] &&& 0x01uy) <<< 13
         let b = uint16 (this._value[1]) >>> 4
@@ -563,7 +558,7 @@ type FlacStreamReader =
 
     member this.GetTotalSamples() =
         if this._position <> StreamPosition.TotalSamples then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at TotalSamples"
 
         let a = uint64 (this._value[0] &&& 0x0Fuy) <<< 8 * 4
         let b = uint64 this._value[1] <<< 8 * 3
@@ -574,121 +569,121 @@ type FlacStreamReader =
 
     member this.GetMd5Signature() =
         if this._position <> StreamPosition.Md5Signature then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at Md5Signature"
 
         Convert.ToHexString(this._value)
 
     member this.GetSeekPointSampleNumber() =
         if this._position <> StreamPosition.SeekPointSampleNumber then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at SeekPointSampleNumber"
 
         BinaryPrimitives.ReadUInt64BigEndian(this._value)
 
     member this.GetSeekPointOffset() =
         if this._position <> StreamPosition.SeekPointOffset then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at SeekPointOffset"
 
         BinaryPrimitives.ReadUInt64BigEndian(this._value)
 
     member this.GetSeekPointNumberOfSamples() =
         if this._position <> StreamPosition.NumberOfSamples then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at NumberOfSamples"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
 
     member this.GetVendorLength() =
         if this._position <> StreamPosition.VendorLength then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at VendorLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
     member this.GetVendorString() =
         if this._position <> StreamPosition.VendorString then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at VendorString"
 
         Encoding.UTF8.GetString(this._value)
 
     member this.GetUserCommentListLength() =
         if this._position <> StreamPosition.UserCommentListLength then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at UserCommentListLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
     member this.GetUserCommentLength() =
         if this._position <> StreamPosition.UserCommentLength then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at UserCommentLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
     member this.GetUserComment() =
         if this._position <> StreamPosition.UserComment then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at UserComment"
 
         Encoding.UTF8.GetString(this._value)
 
     member this.GetPictureType() =
         if this._position <> StreamPosition.PictureType then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at PictureType"
 
         let pictureType = BinaryPrimitives.ReadUInt32BigEndian(this._value)
         enum<PictureType> (int pictureType)
 
     member this.GetMimeTypeLength() =
         if this._position <> StreamPosition.MimeTypeLength then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at MimeTypeLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.GetMimeType() =
         if this._position <> StreamPosition.MimeType then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at MimeType"
 
         Encoding.UTF8.GetString(this._value)
 
     member this.GetPictureDescriptionLength() =
         if this._position <> StreamPosition.PictureDescriptionLength then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at PictureDescriptionLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.GetPictureDescription() =
         if this._position <> StreamPosition.PictureDescription then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at PictureDescription"
 
         Encoding.UTF8.GetString(this._value)
 
     member this.GetPictureWidth() =
         if this._position <> StreamPosition.PictureWidth then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at PictureWidth"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.GetPictureHeight() =
         if this._position <> StreamPosition.PictureHeight then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at PictureHeight"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.GetPictureColorDepth() =
         if this._position <> StreamPosition.PictureColorDepth then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at PictureColorDepth"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.GetPictureNumberOfColors() =
         if this._position <> StreamPosition.PictureNumberOfColors then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at PictureNumberOfColors"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.GetPictureDataLength() =
         if this._position <> StreamPosition.PictureDataLength then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at PictureDataLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.GetPictureData() =
         if this._position <> StreamPosition.PictureData then
-            readerEx "Invalid reader position"
+            readerEx "Expected reader to be positioned at PictureData"
 
         this._value
