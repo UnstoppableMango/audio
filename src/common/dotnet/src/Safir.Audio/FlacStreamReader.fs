@@ -52,10 +52,121 @@ type FlacStreamReader =
     new(buffer: ReadOnlySpan<byte>) = FlacStreamReader(buffer, FlacStreamState.Empty)
 
     member this.Position = this._position
-
     member this.Value = this._value
-
     member this.HasValue = this._hasValue
+
+    // TODO: If we keep this, DRY the logic
+    member this.NextPosition =
+        match this._position with
+        | StreamPosition.Start -> StreamPosition.Marker
+        | StreamPosition.Marker -> StreamPosition.LastMetadataBlockFlag
+        | StreamPosition.LastMetadataBlockFlag -> StreamPosition.MetadataBlockType
+        | StreamPosition.MetadataBlockType -> StreamPosition.DataBlockLength
+        | StreamPosition.DataBlockLength ->
+            match this._blockType with
+            | ValueNone -> readerEx "Expected a value for BlockType"
+            | ValueSome blockType ->
+                match blockType with
+                | BlockType.StreamInfo -> StreamPosition.MinimumBlockSize
+                | BlockType.Padding -> StreamPosition.Padding
+                | BlockType.Application -> StreamPosition.ApplicationId
+                | BlockType.SeekTable -> StreamPosition.SeekPointSampleNumber
+                | BlockType.VorbisComment -> StreamPosition.VendorLength
+                | BlockType.CueSheet -> StreamPosition.MediaCatalogNumber
+                | BlockType.Picture -> StreamPosition.PictureType
+                | _ -> readerEx "Unknown block type"
+        | StreamPosition.MinimumBlockSize -> StreamPosition.MaximumBlockSize
+        | StreamPosition.MaximumBlockSize -> StreamPosition.MinimumFrameSize
+        | StreamPosition.MinimumFrameSize -> StreamPosition.MaximumFrameSize
+        | StreamPosition.MaximumFrameSize -> StreamPosition.StreamInfoSampleRate
+        | StreamPosition.StreamInfoSampleRate -> StreamPosition.NumberOfChannels
+        | StreamPosition.NumberOfChannels -> StreamPosition.BitsPerSample
+        | StreamPosition.BitsPerSample -> StreamPosition.TotalSamples
+        | StreamPosition.TotalSamples -> StreamPosition.Md5Signature
+        | StreamPosition.Md5Signature ->
+            match this._lastMetadataBlock with
+            | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
+            | ValueSome false -> StreamPosition.LastMetadataBlockFlag
+            | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
+        | StreamPosition.Padding ->
+            match this._lastMetadataBlock with
+            | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
+            | ValueSome false -> StreamPosition.LastMetadataBlockFlag
+            | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
+        | StreamPosition.ApplicationId -> StreamPosition.ApplicationData
+        | StreamPosition.ApplicationData ->
+            match this._lastMetadataBlock with
+            | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
+            | ValueSome false -> StreamPosition.LastMetadataBlockFlag
+            | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
+        | StreamPosition.SeekPointSampleNumber -> StreamPosition.SeekPointOffset
+        | StreamPosition.SeekPointOffset -> StreamPosition.NumberOfSamples
+        | StreamPosition.NumberOfSamples ->
+            match this._seekPointCount, this._seekPointOffset with
+            | ValueSome n, ValueSome i when i < n -> StreamPosition.SeekPointSampleNumber
+            | ValueSome n, ValueSome i when i = n ->
+                match this._lastMetadataBlock with
+                | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
+                | ValueSome false -> StreamPosition.LastMetadataBlockFlag
+                | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
+            | _, _ -> readerEx "Expected values for SeekPointCount and SeekPointOffset"
+        | StreamPosition.VendorLength -> StreamPosition.VendorString
+        | StreamPosition.VendorString -> StreamPosition.UserCommentListLength
+        | StreamPosition.UserCommentListLength -> StreamPosition.UserCommentLength
+        | StreamPosition.UserCommentLength -> StreamPosition.UserComment
+        | StreamPosition.UserComment ->
+            match this._userCommentCount, this._userCommentOffset with
+            | ValueSome n, ValueSome i when i < n -> StreamPosition.UserCommentLength
+            | ValueSome n, ValueSome i when i = n ->
+                match this._lastMetadataBlock with
+                | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
+                | ValueSome false -> StreamPosition.LastMetadataBlockFlag
+                | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
+            | _, _ -> readerEx "Expected values for UserCommentCount and UserCommentOffset"
+        | StreamPosition.MediaCatalogNumber -> StreamPosition.NumberOfLeadInSamples
+        | StreamPosition.NumberOfLeadInSamples -> StreamPosition.IsCueSheetCompactDisc
+        | StreamPosition.IsCueSheetCompactDisc -> StreamPosition.CueSheetReserved
+        | StreamPosition.CueSheetReserved -> StreamPosition.NumberOfTracks
+        | StreamPosition.NumberOfTracks -> StreamPosition.TrackOffset
+        | StreamPosition.TrackOffset -> StreamPosition.TrackNumber
+        | StreamPosition.TrackNumber -> StreamPosition.TrackIsrc
+        | StreamPosition.TrackIsrc -> StreamPosition.TrackType
+        | StreamPosition.TrackType -> StreamPosition.PreEmphasis
+        | StreamPosition.PreEmphasis -> StreamPosition.TrackReserved
+        | StreamPosition.TrackReserved -> StreamPosition.NumberOfTrackIndexPoints
+        | StreamPosition.NumberOfTrackIndexPoints -> StreamPosition.TrackIndexOffset
+        | StreamPosition.TrackIndexOffset -> StreamPosition.IndexPointNumber
+        | StreamPosition.IndexPointNumber -> StreamPosition.TrackIndexReserved
+        | StreamPosition.TrackIndexReserved ->
+            match this._cueSheetTrackIndexCount, this._cueSheetTrackIndexOffset with
+            | ValueSome n, ValueSome i when i < n -> StreamPosition.TrackIndexOffset
+            | ValueSome n, ValueSome i when i = n ->
+                match this._cueSheetTrackCount, this._cueSheetTrackOffset with
+                | ValueSome n, ValueSome i when i < n -> StreamPosition.TrackOffset
+                | ValueSome n, ValueSome i when i = n ->
+                    match this._lastMetadataBlock with
+                    | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
+                    | ValueSome false -> StreamPosition.LastMetadataBlockFlag
+                    | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
+                | _, _ -> readerEx "Expected values for CueSheetTrackCount and CueSheetTrackOffset"
+            | _, _ -> readerEx "Expected values for CueSheetTrackIndexCount and CueSheetTrackIndexOffset"
+        | StreamPosition.PictureType -> StreamPosition.MimeTypeLength
+        | StreamPosition.MimeTypeLength -> StreamPosition.MimeType
+        | StreamPosition.MimeType -> StreamPosition.PictureDescriptionLength
+        | StreamPosition.PictureDescriptionLength -> StreamPosition.PictureDescription
+        | StreamPosition.PictureDescription -> StreamPosition.PictureWidth
+        | StreamPosition.PictureWidth -> StreamPosition.PictureHeight
+        | StreamPosition.PictureHeight -> StreamPosition.PictureColorDepth
+        | StreamPosition.PictureColorDepth -> StreamPosition.PictureNumberOfColors
+        | StreamPosition.PictureNumberOfColors -> StreamPosition.PictureDataLength
+        | StreamPosition.PictureDataLength -> StreamPosition.PictureData
+        | StreamPosition.PictureData ->
+            match this._lastMetadataBlock with
+            | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
+            | ValueSome false -> StreamPosition.LastMetadataBlockFlag
+            | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
+        | StreamPosition.End -> StreamPosition.End
+        | _ -> readerEx "Invalid stream position"
 
     member this.Read() =
         let mutable success = true
