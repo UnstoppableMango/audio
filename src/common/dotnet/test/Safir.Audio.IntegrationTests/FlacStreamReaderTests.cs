@@ -44,7 +44,7 @@ public class FlacStreamReaderTests
     }
 
     [Fact]
-    public void Read_StreamInfo_MetadataBlockType()
+    public void Read_StreamInfo_BlockType()
     {
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
@@ -54,7 +54,7 @@ public class FlacStreamReaderTests
         }
 
         Assert.Equal(StreamPosition.MetadataBlockType, reader.Position);
-        Assert.Equal(BlockType.StreamInfo, reader.GetMetadataBlockType());
+        Assert.Equal(BlockType.StreamInfo, reader.GetBlockType());
     }
 
     [Fact]
@@ -222,7 +222,7 @@ public class FlacStreamReaderTests
         }
 
         Assert.Equal(StreamPosition.MetadataBlockType, reader.Position);
-        Assert.Equal(BlockType.SeekTable, reader.GetMetadataBlockType());
+        Assert.Equal(BlockType.SeekTable, reader.GetBlockType());
     }
 
     [Fact]
@@ -306,7 +306,7 @@ public class FlacStreamReaderTests
         }
 
         Assert.Equal(StreamPosition.MetadataBlockType, reader.Position);
-        Assert.Equal(BlockType.VorbisComment, reader.GetMetadataBlockType());
+        Assert.Equal(BlockType.VorbisComment, reader.GetBlockType());
     }
 
     [Fact]
@@ -422,7 +422,7 @@ public class FlacStreamReaderTests
         }
 
         Assert.Equal(StreamPosition.MetadataBlockType, reader.Position);
-        Assert.Equal(BlockType.Picture, reader.GetMetadataBlockType());
+        Assert.Equal(BlockType.Picture, reader.GetBlockType());
     }
 
     [Fact]
@@ -618,7 +618,7 @@ public class FlacStreamReaderTests
         }
 
         Assert.Equal(StreamPosition.MetadataBlockType, reader.Position);
-        Assert.Equal(BlockType.Padding, reader.GetMetadataBlockType());
+        Assert.Equal(BlockType.Padding, reader.GetBlockType());
     }
 
     [Fact]
