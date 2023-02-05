@@ -6,18 +6,6 @@ open System.Text
 open Safir.Audio
 open Safir.Audio.Vorbis
 
-let private readInt3 (bytes: ReadOnlySpan<byte>) =
-    let a = int bytes[0] <<< 16
-    let b = int bytes[1] <<< 8
-    let c = int bytes[2]
-    a + b + c
-
-let private readUInt3 (bytes: ReadOnlySpan<byte>) =
-    let a = uint bytes[0] <<< 16
-    let b = uint bytes[1] <<< 8
-    let c = uint bytes[2]
-    a + b + c
-
 let readMagic (reader: byref<FlacStreamReader>) =
     if reader.Read() && reader.Value.SequenceEqual("fLaC"B) then
         Encoding.ASCII.GetString(reader.Value)
@@ -59,7 +47,7 @@ let readSeekPoint (reader: byref<FlacStreamReader>) =
 let readMetadataBlockSeekTable (reader: byref<FlacStreamReader>) =
     let mutable seekPoints = List.empty
 
-    while reader.NextPosition <> StreamPosition.LastMetadataBlockFlag do
+    while reader.NextValue <> FlacValue.LastMetadataBlockFlag do
         seekPoints <- (readSeekPoint &reader) :: seekPoints
 
     // TODO: Can we not cons/rev?
@@ -82,7 +70,7 @@ let readMetadataBlockVorbisComment (reader: byref<FlacStreamReader>) =
 
     reader.Read() |> ignore // User Comment List Length
 
-    while reader.NextPosition <> StreamPosition.LastMetadataBlockFlag do
+    while reader.NextValue <> FlacValue.LastMetadataBlockFlag do
         comments <- (readVorbisComment &reader) :: comments
 
     // TODO: Can we not cons/rev?
@@ -194,7 +182,7 @@ let readStream (reader: byref<FlacStreamReader>) =
 
     let mutable metadata = [ streamInfo ]
 
-    while reader.NextPosition <> StreamPosition.End do
+    while reader.NextValue <> FlacValue.None do
         metadata <- (readMetadataBlock &reader) :: metadata
 
     { Metadata = metadata |> List.rev }
