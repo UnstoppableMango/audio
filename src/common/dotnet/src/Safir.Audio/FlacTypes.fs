@@ -1,6 +1,5 @@
 namespace Safir.Audio
 
-open System
 open System.Runtime.CompilerServices
 
 type StreamPosition =
@@ -96,28 +95,47 @@ type FlacStreamState =
           CueSheetTrackIndexOffset = ValueNone
           Position = StreamPosition.Start }
 
-    static member Marker =
-        { FlacStreamState.Empty with Position = StreamPosition.Marker }
+    static member StreamInfoHeader = { FlacStreamState.Empty with Position = StreamPosition.Marker }
 
-[<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockHeaderValue =
-    { LastBlock: bool
-      BlockType: BlockType
-      Length: int }
+    static member After(position: StreamPosition) =
+        match position with // TODO: Throw on positions that require more state
+        | StreamPosition.DataBlockLength -> readerEx "More state is required. Use FlacStreamState.AfterBlockHeader"
+        | StreamPosition.Md5Signature
+        | StreamPosition.NumberOfSamples
+        | StreamPosition.UserComment
+        | StreamPosition.PictureData -> readerEx "More state is required. Use FlacStreamState.AfterBlockData"
+        | _ -> { FlacStreamState.Empty with Position = position }
+
+    static member AfterBlockHeader(lastBlock: bool, length: uint32, blockType: BlockType, state: FlacStreamState) =
+        { state with
+            Position = StreamPosition.DataBlockLength
+            LastMetadataBlock = ValueSome lastBlock
+            BlockLength = ValueSome length
+            BlockType = ValueSome blockType }
+
+    static member AfterBlockHeader(lastBlock: bool, length: uint32, blockType: BlockType) =
+        FlacStreamState.AfterBlockHeader(lastBlock, length, blockType, FlacStreamState.Empty)
+
+    static member AfterBlockData(lastBlock: bool, state: FlacStreamState) =
+        { state with LastMetadataBlock = ValueSome lastBlock }
+
+    static member AfterBlockData(lastBlock: bool) =
+        let state =
+            { FlacStreamState.Empty with
+                Position = StreamPosition.PictureData // TODO: More generic position
+                SeekPointCount = ValueSome 0u // TODO: Will zero values here bite us?
+                SeekPointOffset = ValueSome 0u
+                UserCommentCount = ValueSome 0u
+                UserCommentOffset = ValueSome 0u
+                LastMetadataBlock = ValueSome lastBlock }
+
+        FlacStreamState.AfterBlockData(lastBlock, state)
+
+    static member AfterBlockData() = FlacStreamState.AfterBlockData(false)
+
+    static member AfterLastBlock() = FlacStreamState.AfterBlockData(true)
 
 type MetadataBlockHeader = { BlockType: BlockType }
-
-[<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockStreamInfoValue =
-    { MinBlockSize: uint16
-      MaxBlockSize: uint16
-      MinFrameSize: uint32
-      MaxFrameSize: uint32
-      SampleRate: uint32
-      Channels: uint16
-      BitsPerSample: uint16
-      TotalSamples: uint64
-      Md5Signature: ReadOnlySpan<byte> }
 
 type MetadataBlockStreamInfo =
     { MinBlockSize: int
@@ -130,60 +148,24 @@ type MetadataBlockStreamInfo =
       TotalSamples: int64
       Md5Signature: string }
 
-[<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockPaddingValue = MetadataBlockPaddingValue of int
-
 type MetadataBlockPadding = MetadataBlockPadding of int
-
-[<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockApplicationValue =
-    { ApplicationId: uint32
-      ApplicationData: ReadOnlySpan<byte> }
 
 type MetadataBlockApplication =
     { ApplicationId: int
       ApplicationData: byte array }
 
-[<Struct; IsReadOnly; IsByRefLike>]
-type SeekPointValue =
-    { SampleNumber: uint64
-      StreamOffset: uint64
-      FrameSamples: uint16 }
-
-type DefinedSeekPoint =
-    { SampleNumber: int64
-      StreamOffset: int64
-      FrameSamples: int }
-
 type SeekPoint =
     | Placeholder
-    | SeekPoint of DefinedSeekPoint
-
-[<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockSeekTableValue =
-    { Count: int
-      SeekPoints: ReadOnlySpan<byte> }
+    | SeekPoint of
+        {| SampleNumber: int64
+           StreamOffset: int64
+           FrameSamples: int |}
 
 type MetadataBlockSeekTable = { Points: SeekPoint list }
 
-type MetadataBlockVorbisCommentValue = VorbisCommentHeaderValue
-
 type MetadataBlockVorbisComment = MetadataBlockVorbisComment of VorbisCommentHeader
 
-[<Struct; IsReadOnly; IsByRefLike>]
-type CueSheetTrackIndexValue = { Offset: uint64; IndexPoint: uint16 }
-
 type CueSheetTrackIndex = { Offset: int64; IndexPoint: int }
-
-[<Struct; IsReadOnly; IsByRefLike>]
-type CueSheetTrackValue =
-    { Offset: uint64
-      Number: uint16
-      Isrc: ReadOnlySpan<byte>
-      IsAudio: bool
-      PreEmphasis: bool
-      IndexPoints: uint16
-      TrackIndexPoints: ReadOnlySpan<byte> }
 
 type CueSheetTrack =
     { Offset: int64
@@ -192,14 +174,6 @@ type CueSheetTrack =
       IsAudio: bool
       PreEmphasis: bool
       IndexPoints: CueSheetTrackIndex list }
-
-[<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockCueSheetValue =
-    { CatalogNumber: ReadOnlySpan<byte>
-      LeadInSamples: uint64
-      IsCompactDisc: bool
-      TotalTracks: uint16
-      Tracks: ReadOnlySpan<byte> }
 
 // TODO: Discriminate between CD-DA cue-sheets
 type MetadataBlockCueSheet =
@@ -232,20 +206,6 @@ type PictureType =
     | ArtistLogoType = 19
     | PublisherLogoType = 20
 
-[<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockPictureValue =
-    { Type: PictureType
-      MimeLength: uint32
-      MimeType: ReadOnlySpan<byte>
-      DescriptionLength: uint32
-      Description: ReadOnlySpan<byte>
-      Width: uint32
-      Height: uint32
-      Depth: uint32
-      Colors: uint32
-      DataLength: uint32
-      Data: ReadOnlySpan<byte> }
-
 type MetadataBlockPicture =
     { Type: PictureType
       MimeType: string
@@ -257,17 +217,6 @@ type MetadataBlockPicture =
       DataLength: int
       Data: byte array }
 
-[<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockDataValue =
-    | StreamInfo of StreamInfo: MetadataBlockStreamInfoValue
-    | Padding of Padding: MetadataBlockPaddingValue
-    | Application of Application: MetadataBlockApplicationValue
-    | SeekTable of SeekTable: MetadataBlockSeekTableValue
-    | VorbisComment of VorbisComment: MetadataBlockVorbisCommentValue
-    | CueSheet of CueSheet: MetadataBlockCueSheetValue
-    | Picture of Picture: MetadataBlockPictureValue
-    | Skipped of ReadOnlySpan<byte>
-
 type MetadataBlockData =
     | StreamInfo of MetadataBlockStreamInfo
     | Padding of MetadataBlockPadding
@@ -277,11 +226,6 @@ type MetadataBlockData =
     | CueSheet of MetadataBlockCueSheet
     | Picture of MetadataBlockPicture
     | Skipped
-
-[<Struct; IsReadOnly; IsByRefLike>]
-type MetadataBlockValue =
-    { Header: MetadataBlockHeaderValue
-      Data: MetadataBlockDataValue }
 
 type MetadataBlock =
     { Header: MetadataBlockHeader

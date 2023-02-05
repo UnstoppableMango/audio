@@ -1,13 +1,5 @@
 namespace Safir.Audio
 
-open System.Runtime.CompilerServices
-
-[<Struct; IsReadOnly; IsByRefLike>]
-type VorbisCommentValueCs(comment: VorbisCommentValue) =
-    member this.Length = comment.Length
-    member this.Name = comment.Name
-    member this.Value = comment.Value
-
 [<AbstractClass>]
 type VorbisCommentCs(name: string, value: string) =
     member this.Name = name
