@@ -1,4 +1,4 @@
-module Safir.Audio.FlacConstants
+module Safir.Audio.Flac.FlacConstants
 
 // https://xiph.org/flac/format.html#METADATA_BLOCK_STREAMINFO
 

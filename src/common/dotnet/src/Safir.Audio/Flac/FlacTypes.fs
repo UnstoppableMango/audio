@@ -1,6 +1,8 @@
-namespace Safir.Audio
+namespace Safir.Audio.Flac
 
 open System.Runtime.CompilerServices
+open Safir.Audio
+open Safir.Audio.Vorbis
 
 type StreamPosition =
     | Start = 0

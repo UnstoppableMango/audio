@@ -2,7 +2,7 @@ namespace Safir.Audio.Benchmarks
 
 open System.IO
 open BenchmarkDotNet.Attributes
-open Safir.Audio
+open Safir.Audio.Flac
 
 [<MemoryDiagnoser>]
 type FlacStreamReaderBench() =

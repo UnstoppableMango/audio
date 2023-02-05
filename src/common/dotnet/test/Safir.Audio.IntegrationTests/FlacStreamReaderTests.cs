@@ -1,4 +1,5 @@
 using System.Text;
+using Safir.Audio.Flac;
 
 namespace Safir.Audio.IntegrationTests;
 
