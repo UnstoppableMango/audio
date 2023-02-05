@@ -1,4 +1,4 @@
-namespace Safir.Audio
+namespace Safir.Audio.Vorbis
 
 [<AbstractClass>]
 type VorbisCommentCs(name: string, value: string) =

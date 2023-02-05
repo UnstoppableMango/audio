@@ -1,12 +1,11 @@
-namespace Safir.Audio
+namespace Safir.Audio.Flac
 
 open System
 open System.Buffers.Binary
 open System.Runtime.CompilerServices
 open System.Text
+open Safir.Audio
 
-// TODO: There are plenty of copies in here that while they don't
-//       allocate are likely still hurting performance quite a bit
 // TODO: Learn to write performant low-level code
 // TODO: Better delineate between "Read" and "Skip" functions
 

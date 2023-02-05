@@ -1,4 +1,6 @@
-namespace Safir.Audio
+namespace Safir.Audio.Flac
+
+open Safir.Audio.Vorbis
 
 type SeekPointCs =
     { IsPlaceHolder: bool

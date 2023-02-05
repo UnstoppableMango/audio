@@ -1,8 +1,10 @@
-module Safir.Audio.Flac
+module Safir.Audio.Flac.Flac
 
 open System
 open System.Buffers.Binary
 open System.Text
+open Safir.Audio
+open Safir.Audio.Vorbis
 
 let private readInt3 (bytes: ReadOnlySpan<byte>) =
     let a = int bytes[0] <<< 16

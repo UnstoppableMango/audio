@@ -6,6 +6,7 @@ open System
 open System.IO
 open BenchmarkDotNet.Attributes
 open Safir.Audio
+open Safir.Audio.Vorbis
 
 [<MemoryDiagnoser>]
 type VorbisBench() =

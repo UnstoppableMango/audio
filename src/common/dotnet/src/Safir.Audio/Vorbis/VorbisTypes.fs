@@ -1,4 +1,4 @@
-namespace Safir.Audio
+namespace Safir.Audio.Vorbis
 
 type VorbisValue =
     | VendorLength = 20

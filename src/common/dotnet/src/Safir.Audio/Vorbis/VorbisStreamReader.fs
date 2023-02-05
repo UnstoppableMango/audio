@@ -1,4 +1,4 @@
-namespace Safir.Audio
+namespace Safir.Audio.Vorbis
 
 open System
 open System.Runtime.CompilerServices

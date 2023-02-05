@@ -1,7 +1,8 @@
-module Safir.Audio.Vorbis
+module Safir.Audio.Vorbis.Vorbis
 
 open System
 open System.Buffers.Binary
+open Safir.Audio
 
 let private throw m : unit = invalidOp m
 

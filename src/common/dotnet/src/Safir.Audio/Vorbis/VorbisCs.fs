@@ -1,4 +1,4 @@
-module Safir.Audio.VorbisCs
+module Safir.Audio.Vorbis.VorbisCs
 
 let toComment =
     function

@@ -1,4 +1,7 @@
-module Safir.Audio.FlacCs
+module Safir.Audio.Flac.FlacCs
+
+open Safir.Audio
+open Safir.Audio.Vorbis
 
 let ToMetadataBlockStreamInfoCs block =
     MetadataBlockStreamInfoCs(
