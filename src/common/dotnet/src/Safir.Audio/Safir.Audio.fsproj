@@ -8,17 +8,17 @@
     <None Include="packages.lock.json" />
     <Compile Include="Library.fs" />
     <Compile Include="Helpers.fs" />
-    <Compile Include="VorbisTypes.fs" />
-    <Compile Include="VorbisStreamReader.fs" />
-    <Compile Include="Vorbis.fs" />
-    <Compile Include="VorbisCsTypes.fs" />
-    <Compile Include="VorbisCs.fs" />
-    <Compile Include="FlacConstants.fs" />
-    <Compile Include="FlacTypes.fs" />
-    <Compile Include="FlacStreamReader.fs" />
-    <Compile Include="Flac.fs" />
-    <Compile Include="FlacCsTypes.fs" />
-    <Compile Include="FlacCs.fs" />
+    <Compile Include="Vorbis\VorbisTypes.fs" />
+    <Compile Include="Vorbis\VorbisStreamReader.fs" />
+    <Compile Include="Vorbis\Vorbis.fs" />
+    <Compile Include="Vorbis\VorbisCsTypes.fs" />
+    <Compile Include="Vorbis\VorbisCs.fs" />
+    <Compile Include="Flac\FlacConstants.fs" />
+    <Compile Include="Flac\FlacTypes.fs" />
+    <Compile Include="Flac\FlacStreamReader.fs" />
+    <Compile Include="Flac\Flac.fs" />
+    <Compile Include="Flac\FlacCsTypes.fs" />
+    <Compile Include="Flac\FlacCs.fs" />
   </ItemGroup>
 
 </Project>
