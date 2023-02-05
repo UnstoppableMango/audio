@@ -256,22 +256,23 @@ public class FlacTests
         Assert.Equal(79_846, picture.Data.Length);
     }
 
-    // [Fact]
-    // public void ReadFlacStream_FlacFile()
-    // {
-    //     ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
-    //
-    //     var res = FlacCs.ReadFlacStream(file);
-    //
-    //     Assert.NotEmpty(res.Metadata);
-    //
-    //     var metadata = res.Metadata.ToList();
-    //     Assert.Equal(5, metadata.Count);
-    //
-    //     Assert.IsType<MetadataBlockStreamInfoValueCs>(metadata[0].Data);
-    //     Assert.IsType<MetadataBlockSeekTableValueCs>(metadata[1].Data);
-    //     Assert.IsType<MetadataBlockVorbisCommentValueCs>(metadata[2].Data);
-    //     Assert.IsType<MetadataBlockPictureValueCs>(metadata[3].Data);
-    //     Assert.IsType<MetadataBlockPaddingValueCs>(metadata[4].Data);
-    // }
+    [Fact]
+    public void ReadStream_FlacFile()
+    {
+        ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
+        var reader = new FlacStreamReader(file);
+
+        var res = FlacCs.ReadStream(ref reader);
+
+        Assert.NotEmpty(res.Metadata);
+
+        var metadata = res.Metadata.ToList();
+        Assert.Equal(5, metadata.Count);
+
+        Assert.IsType<MetadataBlockStreamInfoCs>(metadata[0].Data);
+        Assert.IsType<MetadataBlockSeekTableCs>(metadata[1].Data);
+        Assert.IsType<MetadataBlockVorbisCommentCs>(metadata[2].Data);
+        Assert.IsType<MetadataBlockPictureCs>(metadata[3].Data);
+        Assert.IsType<MetadataBlockPaddingCs>(metadata[4].Data);
+    }
 }
