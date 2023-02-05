@@ -9,8 +9,10 @@
     <Compile Include="Library.fs" />
     <Compile Include="Helpers.fs" />
     <Compile Include="VorbisTypes.fs" />
+    <Compile Include="VorbisStreamReader.fs" />
     <Compile Include="Vorbis.fs" />
     <Compile Include="VorbisCsTypes.fs" />
+    <Compile Include="VorbisCs.fs" />
     <Compile Include="FlacConstants.fs" />
     <Compile Include="FlacTypes.fs" />
     <Compile Include="FlacStreamReader.fs" />

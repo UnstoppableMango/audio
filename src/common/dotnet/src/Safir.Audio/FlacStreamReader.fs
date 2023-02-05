@@ -233,6 +233,10 @@ type FlacStreamReader =
         // TODO: Optimize to skip everything but the necessary bits
         this.Read() |> ignore
 
+    member this.SkipTo(position: StreamPosition) =
+        while this.NextPosition <> position && this.Read() do
+            this.Skip()
+
     member private this.Read(position: StreamPosition, length: int) =
         this._value <- this._buffer.Slice(this._consumed, length)
         this._consumed <- this._consumed + length
