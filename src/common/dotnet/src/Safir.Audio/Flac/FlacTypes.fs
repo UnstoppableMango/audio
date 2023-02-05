@@ -4,8 +4,8 @@ open System.Runtime.CompilerServices
 open Safir.Audio
 open Safir.Audio.Vorbis
 
-type StreamPosition =
-    | Start = 0
+type FlacValue =
+    | None = 0
     | Marker = 1
     | LastMetadataBlockFlag = 2
     | MetadataBlockType = 3
@@ -56,7 +56,6 @@ type StreamPosition =
     | PictureNumberOfColors = 48
     | PictureDataLength = 49
     | PictureData = 50
-    | End = 420
 
 type BlockType =
     | StreamInfo = 0
@@ -81,7 +80,7 @@ type FlacStreamState =
       CueSheetTrackOffset: ValueOption<int>
       CueSheetTrackIndexCount: ValueOption<int>
       CueSheetTrackIndexOffset: ValueOption<int>
-      Position: StreamPosition }
+      Value: FlacValue }
 
     static member Empty =
         { BlockLength = ValueNone
@@ -95,22 +94,22 @@ type FlacStreamState =
           CueSheetTrackOffset = ValueNone
           CueSheetTrackIndexCount = ValueNone
           CueSheetTrackIndexOffset = ValueNone
-          Position = StreamPosition.Start }
+          Value = FlacValue.None }
 
-    static member StreamInfoHeader = { FlacStreamState.Empty with Position = StreamPosition.Marker }
+    static member StreamInfoHeader = { FlacStreamState.Empty with Value = FlacValue.Marker }
 
-    static member After(position: StreamPosition) =
+    static member After(position: FlacValue) =
         match position with // TODO: Throw on positions that require more state
-        | StreamPosition.DataBlockLength -> readerEx "More state is required. Use FlacStreamState.AfterBlockHeader"
-        | StreamPosition.Md5Signature
-        | StreamPosition.NumberOfSamples
-        | StreamPosition.UserComment
-        | StreamPosition.PictureData -> readerEx "More state is required. Use FlacStreamState.AfterBlockData"
-        | _ -> { FlacStreamState.Empty with Position = position }
+        | FlacValue.DataBlockLength -> readerEx "More state is required. Use FlacStreamState.AfterBlockHeader"
+        | FlacValue.Md5Signature
+        | FlacValue.NumberOfSamples
+        | FlacValue.UserComment
+        | FlacValue.PictureData -> readerEx "More state is required. Use FlacStreamState.AfterBlockData"
+        | _ -> { FlacStreamState.Empty with Value = position }
 
     static member AfterBlockHeader(lastBlock: bool, length: uint32, blockType: BlockType, state: FlacStreamState) =
         { state with
-            Position = StreamPosition.DataBlockLength
+            Value = FlacValue.DataBlockLength
             LastMetadataBlock = ValueSome lastBlock
             BlockLength = ValueSome length
             BlockType = ValueSome blockType }
@@ -124,7 +123,7 @@ type FlacStreamState =
     static member AfterBlockData(lastBlock: bool) =
         let state =
             { FlacStreamState.Empty with
-                Position = StreamPosition.PictureData // TODO: More generic position
+                Value = FlacValue.PictureData // TODO: More generic position
                 SeekPointCount = ValueSome 0u // TODO: Will zero values here bite us?
                 SeekPointOffset = ValueSome 0u
                 UserCommentCount = ValueSome 0u

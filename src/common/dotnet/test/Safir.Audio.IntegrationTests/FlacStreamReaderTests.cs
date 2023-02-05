@@ -14,7 +14,7 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        Assert.Equal(StreamPosition.Start, reader.Position);
+        Assert.Equal(FlacValue.None, reader.ValueType);
         Assert.Equal(0, reader.Value.Length);
     }
 
@@ -26,7 +26,7 @@ public class FlacStreamReaderTests
 
         reader.Read();
 
-        Assert.Equal(StreamPosition.Marker, reader.Position);
+        Assert.Equal(FlacValue.Marker, reader.ValueType);
         Assert.Equal("fLaC", Encoding.ASCII.GetString(reader.Value));
     }
 
@@ -40,7 +40,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.LastMetadataBlockFlag, reader.Position);
+        Assert.Equal(FlacValue.LastMetadataBlockFlag, reader.ValueType);
         Assert.False(reader.GetLastMetadataBlockFlag());
     }
 
@@ -54,7 +54,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.MetadataBlockType, reader.Position);
+        Assert.Equal(FlacValue.MetadataBlockType, reader.ValueType);
         Assert.Equal(BlockType.StreamInfo, reader.GetBlockType());
     }
 
@@ -68,7 +68,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.DataBlockLength, reader.Position);
+        Assert.Equal(FlacValue.DataBlockLength, reader.ValueType);
         Assert.Equal(34u, reader.GetDataBlockLength());
     }
 
@@ -82,7 +82,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.MinimumBlockSize, reader.Position);
+        Assert.Equal(FlacValue.MinimumBlockSize, reader.ValueType);
         Assert.Equal(4096, reader.GetMinimumBlockSize());
     }
 
@@ -96,7 +96,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.MaximumBlockSize, reader.Position);
+        Assert.Equal(FlacValue.MaximumBlockSize, reader.ValueType);
         Assert.Equal(4096, reader.GetMaximumBlockSize());
     }
 
@@ -110,7 +110,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.MinimumFrameSize, reader.Position);
+        Assert.Equal(FlacValue.MinimumFrameSize, reader.ValueType);
         Assert.Equal(1781u, reader.GetMinimumFrameSize());
     }
 
@@ -124,7 +124,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.MaximumFrameSize, reader.Position);
+        Assert.Equal(FlacValue.MaximumFrameSize, reader.ValueType);
         Assert.Equal(14163u, reader.GetMaximumFrameSize());
     }
 
@@ -138,7 +138,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.StreamInfoSampleRate, reader.Position);
+        Assert.Equal(FlacValue.StreamInfoSampleRate, reader.ValueType);
         Assert.Equal(44100u, reader.GetSampleRate());
     }
 
@@ -152,7 +152,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.NumberOfChannels, reader.Position);
+        Assert.Equal(FlacValue.NumberOfChannels, reader.ValueType);
         Assert.Equal(2, reader.GetChannels());
     }
 
@@ -166,7 +166,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.BitsPerSample, reader.Position);
+        Assert.Equal(FlacValue.BitsPerSample, reader.ValueType);
         Assert.Equal(16, reader.GetBitsPerSample());
     }
 
@@ -180,7 +180,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.TotalSamples, reader.Position);
+        Assert.Equal(FlacValue.TotalSamples, reader.ValueType);
         Assert.Equal(7028438u, reader.GetTotalSamples());
     }
 
@@ -194,7 +194,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.Md5Signature, reader.Position);
+        Assert.Equal(FlacValue.Md5Signature, reader.ValueType);
         Assert.Equal("3c16b5b7186537d6823c7be62fe8c661", reader.GetMd5Signature(), ignoreCase: true);
     }
 
@@ -208,7 +208,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.LastMetadataBlockFlag, reader.Position);
+        Assert.Equal(FlacValue.LastMetadataBlockFlag, reader.ValueType);
         Assert.False(reader.GetLastMetadataBlockFlag());
     }
 
@@ -222,7 +222,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.MetadataBlockType, reader.Position);
+        Assert.Equal(FlacValue.MetadataBlockType, reader.ValueType);
         Assert.Equal(BlockType.SeekTable, reader.GetBlockType());
     }
 
@@ -236,7 +236,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.DataBlockLength, reader.Position);
+        Assert.Equal(FlacValue.DataBlockLength, reader.ValueType);
         Assert.Equal(288u, reader.GetDataBlockLength());
     }
 
@@ -250,17 +250,17 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.SeekPointSampleNumber, reader.Position);
+        Assert.Equal(FlacValue.SeekPointSampleNumber, reader.ValueType);
         Assert.Equal(0u, reader.GetSeekPointSampleNumber());
 
         reader.Read();
 
-        Assert.Equal(StreamPosition.SeekPointOffset, reader.Position);
+        Assert.Equal(FlacValue.SeekPointOffset, reader.ValueType);
         Assert.Equal(0u, reader.GetSeekPointOffset());
 
         reader.Read();
 
-        Assert.Equal(StreamPosition.NumberOfSamples, reader.Position);
+        Assert.Equal(FlacValue.NumberOfSamples, reader.ValueType);
         Assert.Equal(4096u, reader.GetSeekPointNumberOfSamples());
 
         // 14 seek points until the end, 3 blocks each, +1 to advance into the final seek point
@@ -268,17 +268,17 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.SeekPointSampleNumber, reader.Position);
+        Assert.Equal(FlacValue.SeekPointSampleNumber, reader.ValueType);
         Assert.Equal(6610944u, reader.GetSeekPointSampleNumber());
 
         reader.Read();
 
-        Assert.Equal(StreamPosition.SeekPointOffset, reader.Position);
+        Assert.Equal(FlacValue.SeekPointOffset, reader.ValueType);
         Assert.Equal(18894059u, reader.GetSeekPointOffset());
 
         reader.Read();
 
-        Assert.Equal(StreamPosition.NumberOfSamples, reader.Position);
+        Assert.Equal(FlacValue.NumberOfSamples, reader.ValueType);
         Assert.Equal(4096u, reader.GetSeekPointNumberOfSamples());
     }
 
@@ -292,7 +292,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.LastMetadataBlockFlag, reader.Position);
+        Assert.Equal(FlacValue.LastMetadataBlockFlag, reader.ValueType);
         Assert.False(reader.GetLastMetadataBlockFlag());
     }
 
@@ -306,7 +306,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.MetadataBlockType, reader.Position);
+        Assert.Equal(FlacValue.MetadataBlockType, reader.ValueType);
         Assert.Equal(BlockType.VorbisComment, reader.GetBlockType());
     }
 
@@ -320,7 +320,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.DataBlockLength, reader.Position);
+        Assert.Equal(FlacValue.DataBlockLength, reader.ValueType);
         Assert.Equal(294u, reader.GetDataBlockLength());
     }
 
@@ -334,7 +334,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.VendorLength, reader.Position);
+        Assert.Equal(FlacValue.VendorLength, reader.ValueType);
         Assert.Equal(32u, reader.GetVendorLength());
     }
 
@@ -348,7 +348,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.VendorString, reader.Position);
+        Assert.Equal(FlacValue.VendorString, reader.ValueType);
         Assert.Equal("reference libFLAC 1.3.2 20170101", reader.GetVendorString());
     }
 
@@ -362,7 +362,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.UserCommentListLength, reader.Position);
+        Assert.Equal(FlacValue.UserCommentListLength, reader.ValueType);
         Assert.Equal(14u, reader.GetUserCommentListLength());
     }
 
@@ -376,12 +376,12 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.UserCommentLength, reader.Position);
+        Assert.Equal(FlacValue.UserCommentLength, reader.ValueType);
         Assert.Equal(11u, reader.GetUserCommentLength());
 
         reader.Read();
 
-        Assert.Equal(StreamPosition.UserComment, reader.Position);
+        Assert.Equal(FlacValue.UserComment, reader.ValueType);
         Assert.Equal("TITLE=Flirt", reader.GetUserComment());
 
         // 12 comments until the end, 2 blocks each, +1 to advance into the final comment
@@ -389,12 +389,12 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.UserCommentLength, reader.Position);
+        Assert.Equal(FlacValue.UserCommentLength, reader.ValueType);
         Assert.Equal(20u, reader.GetUserCommentLength());
 
         reader.Read();
 
-        Assert.Equal(StreamPosition.UserComment, reader.Position);
+        Assert.Equal(FlacValue.UserComment, reader.ValueType);
         Assert.Equal("BARCODE=859723487007", reader.GetUserComment());
     }
 
@@ -408,7 +408,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.LastMetadataBlockFlag, reader.Position);
+        Assert.Equal(FlacValue.LastMetadataBlockFlag, reader.ValueType);
         Assert.False(reader.GetLastMetadataBlockFlag());
     }
 
@@ -422,7 +422,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.MetadataBlockType, reader.Position);
+        Assert.Equal(FlacValue.MetadataBlockType, reader.ValueType);
         Assert.Equal(BlockType.Picture, reader.GetBlockType());
     }
 
@@ -436,7 +436,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.DataBlockLength, reader.Position);
+        Assert.Equal(FlacValue.DataBlockLength, reader.ValueType);
         Assert.Equal(79_888u, reader.GetDataBlockLength());
     }
 
@@ -450,7 +450,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.PictureType, reader.Position);
+        Assert.Equal(FlacValue.PictureType, reader.ValueType);
         Assert.Equal(PictureType.FrontCover, reader.GetPictureType());
     }
 
@@ -464,7 +464,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.MimeTypeLength, reader.Position);
+        Assert.Equal(FlacValue.MimeTypeLength, reader.ValueType);
         Assert.Equal(10u, reader.GetMimeTypeLength());
     }
 
@@ -478,7 +478,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.MimeType, reader.Position);
+        Assert.Equal(FlacValue.MimeType, reader.ValueType);
         Assert.Equal("image/jpeg", reader.GetMimeType());
     }
 
@@ -492,7 +492,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.PictureDescriptionLength, reader.Position);
+        Assert.Equal(FlacValue.PictureDescriptionLength, reader.ValueType);
         Assert.Equal(0u, reader.GetPictureDescriptionLength());
     }
 
@@ -506,7 +506,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.PictureDescription, reader.Position);
+        Assert.Equal(FlacValue.PictureDescription, reader.ValueType);
         Assert.Equal(string.Empty, reader.GetPictureDescription());
     }
 
@@ -520,7 +520,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.PictureWidth, reader.Position);
+        Assert.Equal(FlacValue.PictureWidth, reader.ValueType);
         Assert.Equal(800u, reader.GetPictureWidth());
     }
 
@@ -534,7 +534,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.PictureHeight, reader.Position);
+        Assert.Equal(FlacValue.PictureHeight, reader.ValueType);
         Assert.Equal(800u, reader.GetPictureHeight());
     }
 
@@ -548,7 +548,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.PictureColorDepth, reader.Position);
+        Assert.Equal(FlacValue.PictureColorDepth, reader.ValueType);
         Assert.Equal(24u, reader.GetPictureColorDepth());
     }
 
@@ -562,7 +562,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.PictureNumberOfColors, reader.Position);
+        Assert.Equal(FlacValue.PictureNumberOfColors, reader.ValueType);
         Assert.Equal(0u, reader.GetPictureNumberOfColors());
     }
 
@@ -576,7 +576,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.PictureDataLength, reader.Position);
+        Assert.Equal(FlacValue.PictureDataLength, reader.ValueType);
         Assert.Equal(79_846u, reader.GetPictureDataLength());
     }
 
@@ -590,7 +590,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.PictureData, reader.Position);
+        Assert.Equal(FlacValue.PictureData, reader.ValueType);
         Assert.Equal(79_846, reader.GetPictureData().Length);
     }
 
@@ -604,7 +604,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.LastMetadataBlockFlag, reader.Position);
+        Assert.Equal(FlacValue.LastMetadataBlockFlag, reader.ValueType);
         Assert.True(reader.GetLastMetadataBlockFlag());
     }
 
@@ -618,7 +618,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.MetadataBlockType, reader.Position);
+        Assert.Equal(FlacValue.MetadataBlockType, reader.ValueType);
         Assert.Equal(BlockType.Padding, reader.GetBlockType());
     }
 
@@ -632,7 +632,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.DataBlockLength, reader.Position);
+        Assert.Equal(FlacValue.DataBlockLength, reader.ValueType);
         Assert.Equal(16_384u, reader.GetDataBlockLength());
     }
 
@@ -646,7 +646,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.Padding, reader.Position);
+        Assert.Equal(FlacValue.Padding, reader.ValueType);
         Assert.Equal(16_384, reader.Value.Length);
     }
 
@@ -660,7 +660,7 @@ public class FlacStreamReaderTests
             reader.Read();
         }
 
-        Assert.Equal(StreamPosition.End, reader.Position);
+        Assert.Equal(FlacValue.None, reader.ValueType);
         Assert.Equal(0, reader.Value.Length);
     }
 }

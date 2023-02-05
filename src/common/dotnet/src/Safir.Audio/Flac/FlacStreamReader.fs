@@ -13,10 +13,10 @@ open Safir.Audio
 type FlacStreamReader =
     val private _buffer: ReadOnlySpan<byte>
 
-    val mutable private _position: StreamPosition
+    val mutable private _valueType: FlacValue
     val mutable private _consumed: int
-    val mutable private _hasValue: bool
     val mutable private _value: ReadOnlySpan<byte>
+    val mutable private _done: bool
 
     val mutable private _blockLength: ValueOption<uint32>
     val mutable private _blockType: ValueOption<BlockType>
@@ -32,10 +32,10 @@ type FlacStreamReader =
 
     new(buffer: ReadOnlySpan<byte>, state: FlacStreamState) =
         { _buffer = buffer
-          _position = state.Position
+          _valueType = state.Value
           _consumed = 0
           _value = ReadOnlySpan<byte>.Empty
-          _hasValue = false
+          _done = false
           _blockLength = state.BlockLength
           _blockType = state.BlockType
           _lastMetadataBlock = state.LastMetadataBlock
@@ -50,196 +50,193 @@ type FlacStreamReader =
 
     new(buffer: ReadOnlySpan<byte>) = FlacStreamReader(buffer, FlacStreamState.Empty)
 
-    member this.Position = this._position
+    member this.ValueType = this._valueType
     member this.Value = this._value
-    member this.HasValue = this._hasValue
 
     // TODO: If we keep this, DRY the logic
-    member this.NextPosition =
-        match this._position with
-        | StreamPosition.Start -> StreamPosition.Marker
-        | StreamPosition.Marker -> StreamPosition.LastMetadataBlockFlag
-        | StreamPosition.LastMetadataBlockFlag -> StreamPosition.MetadataBlockType
-        | StreamPosition.MetadataBlockType -> StreamPosition.DataBlockLength
-        | StreamPosition.DataBlockLength ->
+    member this.NextValue =
+        match this._valueType with
+        | FlacValue.None -> FlacValue.Marker
+        | FlacValue.Marker -> FlacValue.LastMetadataBlockFlag
+        | FlacValue.LastMetadataBlockFlag -> FlacValue.MetadataBlockType
+        | FlacValue.MetadataBlockType -> FlacValue.DataBlockLength
+        | FlacValue.DataBlockLength ->
             match this._blockType with
             | ValueNone -> readerEx "Expected a value for BlockType"
             | ValueSome blockType ->
                 match blockType with
-                | BlockType.StreamInfo -> StreamPosition.MinimumBlockSize
-                | BlockType.Padding -> StreamPosition.Padding
-                | BlockType.Application -> StreamPosition.ApplicationId
-                | BlockType.SeekTable -> StreamPosition.SeekPointSampleNumber
-                | BlockType.VorbisComment -> StreamPosition.VendorLength
-                | BlockType.CueSheet -> StreamPosition.MediaCatalogNumber
-                | BlockType.Picture -> StreamPosition.PictureType
+                | BlockType.StreamInfo -> FlacValue.MinimumBlockSize
+                | BlockType.Padding -> FlacValue.Padding
+                | BlockType.Application -> FlacValue.ApplicationId
+                | BlockType.SeekTable -> FlacValue.SeekPointSampleNumber
+                | BlockType.VorbisComment -> FlacValue.VendorLength
+                | BlockType.CueSheet -> FlacValue.MediaCatalogNumber
+                | BlockType.Picture -> FlacValue.PictureType
                 | _ -> readerEx "Unknown block type"
-        | StreamPosition.MinimumBlockSize -> StreamPosition.MaximumBlockSize
-        | StreamPosition.MaximumBlockSize -> StreamPosition.MinimumFrameSize
-        | StreamPosition.MinimumFrameSize -> StreamPosition.MaximumFrameSize
-        | StreamPosition.MaximumFrameSize -> StreamPosition.StreamInfoSampleRate
-        | StreamPosition.StreamInfoSampleRate -> StreamPosition.NumberOfChannels
-        | StreamPosition.NumberOfChannels -> StreamPosition.BitsPerSample
-        | StreamPosition.BitsPerSample -> StreamPosition.TotalSamples
-        | StreamPosition.TotalSamples -> StreamPosition.Md5Signature
-        | StreamPosition.Md5Signature ->
+        | FlacValue.MinimumBlockSize -> FlacValue.MaximumBlockSize
+        | FlacValue.MaximumBlockSize -> FlacValue.MinimumFrameSize
+        | FlacValue.MinimumFrameSize -> FlacValue.MaximumFrameSize
+        | FlacValue.MaximumFrameSize -> FlacValue.StreamInfoSampleRate
+        | FlacValue.StreamInfoSampleRate -> FlacValue.NumberOfChannels
+        | FlacValue.NumberOfChannels -> FlacValue.BitsPerSample
+        | FlacValue.BitsPerSample -> FlacValue.TotalSamples
+        | FlacValue.TotalSamples -> FlacValue.Md5Signature
+        | FlacValue.Md5Signature ->
             match this._lastMetadataBlock with
             | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-            | ValueSome false -> StreamPosition.LastMetadataBlockFlag
-            | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
-        | StreamPosition.Padding ->
+            | ValueSome false -> FlacValue.LastMetadataBlockFlag
+            | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
+        | FlacValue.Padding ->
             match this._lastMetadataBlock with
             | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-            | ValueSome false -> StreamPosition.LastMetadataBlockFlag
-            | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
-        | StreamPosition.ApplicationId -> StreamPosition.ApplicationData
-        | StreamPosition.ApplicationData ->
+            | ValueSome false -> FlacValue.LastMetadataBlockFlag
+            | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
+        | FlacValue.ApplicationId -> FlacValue.ApplicationData
+        | FlacValue.ApplicationData ->
             match this._lastMetadataBlock with
             | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-            | ValueSome false -> StreamPosition.LastMetadataBlockFlag
-            | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
-        | StreamPosition.SeekPointSampleNumber -> StreamPosition.SeekPointOffset
-        | StreamPosition.SeekPointOffset -> StreamPosition.NumberOfSamples
-        | StreamPosition.NumberOfSamples ->
+            | ValueSome false -> FlacValue.LastMetadataBlockFlag
+            | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
+        | FlacValue.SeekPointSampleNumber -> FlacValue.SeekPointOffset
+        | FlacValue.SeekPointOffset -> FlacValue.NumberOfSamples
+        | FlacValue.NumberOfSamples ->
             match this._seekPointCount, this._seekPointOffset with
-            | ValueSome n, ValueSome i when i < n -> StreamPosition.SeekPointSampleNumber
+            | ValueSome n, ValueSome i when i < n -> FlacValue.SeekPointSampleNumber
             | ValueSome n, ValueSome i when i = n ->
                 match this._lastMetadataBlock with
                 | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-                | ValueSome false -> StreamPosition.LastMetadataBlockFlag
-                | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
+                | ValueSome false -> FlacValue.LastMetadataBlockFlag
+                | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
             | _, _ -> readerEx "Expected values for SeekPointCount and SeekPointOffset"
-        | StreamPosition.VendorLength -> StreamPosition.VendorString
-        | StreamPosition.VendorString -> StreamPosition.UserCommentListLength
-        | StreamPosition.UserCommentListLength -> StreamPosition.UserCommentLength
-        | StreamPosition.UserCommentLength -> StreamPosition.UserComment
-        | StreamPosition.UserComment ->
+        | FlacValue.VendorLength -> FlacValue.VendorString
+        | FlacValue.VendorString -> FlacValue.UserCommentListLength
+        | FlacValue.UserCommentListLength -> FlacValue.UserCommentLength
+        | FlacValue.UserCommentLength -> FlacValue.UserComment
+        | FlacValue.UserComment ->
             match this._userCommentCount, this._userCommentOffset with
-            | ValueSome n, ValueSome i when i < n -> StreamPosition.UserCommentLength
+            | ValueSome n, ValueSome i when i < n -> FlacValue.UserCommentLength
             | ValueSome n, ValueSome i when i = n ->
                 match this._lastMetadataBlock with
                 | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-                | ValueSome false -> StreamPosition.LastMetadataBlockFlag
-                | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
+                | ValueSome false -> FlacValue.LastMetadataBlockFlag
+                | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
             | _, _ -> readerEx "Expected values for UserCommentCount and UserCommentOffset"
-        | StreamPosition.MediaCatalogNumber -> StreamPosition.NumberOfLeadInSamples
-        | StreamPosition.NumberOfLeadInSamples -> StreamPosition.IsCueSheetCompactDisc
-        | StreamPosition.IsCueSheetCompactDisc -> StreamPosition.CueSheetReserved
-        | StreamPosition.CueSheetReserved -> StreamPosition.NumberOfTracks
-        | StreamPosition.NumberOfTracks -> StreamPosition.TrackOffset
-        | StreamPosition.TrackOffset -> StreamPosition.TrackNumber
-        | StreamPosition.TrackNumber -> StreamPosition.TrackIsrc
-        | StreamPosition.TrackIsrc -> StreamPosition.TrackType
-        | StreamPosition.TrackType -> StreamPosition.PreEmphasis
-        | StreamPosition.PreEmphasis -> StreamPosition.TrackReserved
-        | StreamPosition.TrackReserved -> StreamPosition.NumberOfTrackIndexPoints
-        | StreamPosition.NumberOfTrackIndexPoints -> StreamPosition.TrackIndexOffset
-        | StreamPosition.TrackIndexOffset -> StreamPosition.IndexPointNumber
-        | StreamPosition.IndexPointNumber -> StreamPosition.TrackIndexReserved
-        | StreamPosition.TrackIndexReserved ->
+        | FlacValue.MediaCatalogNumber -> FlacValue.NumberOfLeadInSamples
+        | FlacValue.NumberOfLeadInSamples -> FlacValue.IsCueSheetCompactDisc
+        | FlacValue.IsCueSheetCompactDisc -> FlacValue.CueSheetReserved
+        | FlacValue.CueSheetReserved -> FlacValue.NumberOfTracks
+        | FlacValue.NumberOfTracks -> FlacValue.TrackOffset
+        | FlacValue.TrackOffset -> FlacValue.TrackNumber
+        | FlacValue.TrackNumber -> FlacValue.TrackIsrc
+        | FlacValue.TrackIsrc -> FlacValue.TrackType
+        | FlacValue.TrackType -> FlacValue.PreEmphasis
+        | FlacValue.PreEmphasis -> FlacValue.TrackReserved
+        | FlacValue.TrackReserved -> FlacValue.NumberOfTrackIndexPoints
+        | FlacValue.NumberOfTrackIndexPoints -> FlacValue.TrackIndexOffset
+        | FlacValue.TrackIndexOffset -> FlacValue.IndexPointNumber
+        | FlacValue.IndexPointNumber -> FlacValue.TrackIndexReserved
+        | FlacValue.TrackIndexReserved ->
             match this._cueSheetTrackIndexCount, this._cueSheetTrackIndexOffset with
-            | ValueSome n, ValueSome i when i < n -> StreamPosition.TrackIndexOffset
+            | ValueSome n, ValueSome i when i < n -> FlacValue.TrackIndexOffset
             | ValueSome n, ValueSome i when i = n ->
                 match this._cueSheetTrackCount, this._cueSheetTrackOffset with
-                | ValueSome n, ValueSome i when i < n -> StreamPosition.TrackOffset
+                | ValueSome n, ValueSome i when i < n -> FlacValue.TrackOffset
                 | ValueSome n, ValueSome i when i = n ->
                     match this._lastMetadataBlock with
                     | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-                    | ValueSome false -> StreamPosition.LastMetadataBlockFlag
-                    | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
+                    | ValueSome false -> FlacValue.LastMetadataBlockFlag
+                    | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
                 | _, _ -> readerEx "Expected values for CueSheetTrackCount and CueSheetTrackOffset"
             | _, _ -> readerEx "Expected values for CueSheetTrackIndexCount and CueSheetTrackIndexOffset"
-        | StreamPosition.PictureType -> StreamPosition.MimeTypeLength
-        | StreamPosition.MimeTypeLength -> StreamPosition.MimeType
-        | StreamPosition.MimeType -> StreamPosition.PictureDescriptionLength
-        | StreamPosition.PictureDescriptionLength -> StreamPosition.PictureDescription
-        | StreamPosition.PictureDescription -> StreamPosition.PictureWidth
-        | StreamPosition.PictureWidth -> StreamPosition.PictureHeight
-        | StreamPosition.PictureHeight -> StreamPosition.PictureColorDepth
-        | StreamPosition.PictureColorDepth -> StreamPosition.PictureNumberOfColors
-        | StreamPosition.PictureNumberOfColors -> StreamPosition.PictureDataLength
-        | StreamPosition.PictureDataLength -> StreamPosition.PictureData
-        | StreamPosition.PictureData ->
+        | FlacValue.PictureType -> FlacValue.MimeTypeLength
+        | FlacValue.MimeTypeLength -> FlacValue.MimeType
+        | FlacValue.MimeType -> FlacValue.PictureDescriptionLength
+        | FlacValue.PictureDescriptionLength -> FlacValue.PictureDescription
+        | FlacValue.PictureDescription -> FlacValue.PictureWidth
+        | FlacValue.PictureWidth -> FlacValue.PictureHeight
+        | FlacValue.PictureHeight -> FlacValue.PictureColorDepth
+        | FlacValue.PictureColorDepth -> FlacValue.PictureNumberOfColors
+        | FlacValue.PictureNumberOfColors -> FlacValue.PictureDataLength
+        | FlacValue.PictureDataLength -> FlacValue.PictureData
+        | FlacValue.PictureData ->
             match this._lastMetadataBlock with
             | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-            | ValueSome false -> StreamPosition.LastMetadataBlockFlag
-            | ValueSome true -> StreamPosition.End // We currently don't support anything past metadata
-        | StreamPosition.End -> StreamPosition.End
+            | ValueSome false -> FlacValue.LastMetadataBlockFlag
+            | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
         | _ -> readerEx "Invalid stream position"
 
     member this.Read() =
-        let mutable success = true
+        if this._done then
+            false
+        else
+            match this._valueType with
+            | FlacValue.None -> this.Read(FlacValue.Marker, 4)
+            | FlacValue.Marker -> this.ReadLastMetadataBlockFlag()
+            | FlacValue.LastMetadataBlockFlag -> this.ReadMetadataBlockType()
+            | FlacValue.MetadataBlockType -> this.ReadMetadataBlockLength()
+            | FlacValue.DataBlockLength -> this.StartMetadataBlockData()
+            | FlacValue.MinimumBlockSize -> this.Read(FlacValue.MaximumBlockSize, 2)
+            | FlacValue.MaximumBlockSize -> this.Read(FlacValue.MinimumFrameSize, 3)
+            | FlacValue.MinimumFrameSize -> this.Read(FlacValue.MaximumFrameSize, 3)
+            | FlacValue.MaximumFrameSize -> this.ReadSampleRate()
+            | FlacValue.StreamInfoSampleRate -> this.ReadNumberOfChannels()
+            | FlacValue.NumberOfChannels -> this.ReadBitsPerSample()
+            | FlacValue.BitsPerSample -> this.ReadTotalSamples()
+            | FlacValue.TotalSamples -> this.Read(FlacValue.Md5Signature, 16)
+            | FlacValue.Md5Signature -> this.EndMetadataBlockData()
+            | FlacValue.Padding -> this.EndMetadataBlockData()
+            | FlacValue.ApplicationId -> this.ReadApplicationData()
+            | FlacValue.ApplicationData -> this.EndMetadataBlockData()
+            | FlacValue.SeekPointSampleNumber -> this.Read(FlacValue.SeekPointOffset, 8)
+            | FlacValue.SeekPointOffset -> this.Read(FlacValue.NumberOfSamples, 2)
+            | FlacValue.NumberOfSamples -> this.EndSeekPoint()
+            | FlacValue.VendorLength -> this.ReadVendorString()
+            | FlacValue.VendorString -> this.Read(FlacValue.UserCommentListLength, 4)
+            | FlacValue.UserCommentListLength -> this.StartUserCommentList()
+            | FlacValue.UserCommentLength -> this.ReadUserComment()
+            | FlacValue.UserComment -> this.EndUserComment()
+            | FlacValue.MediaCatalogNumber -> this.ReadCueSheetLeadInSamplesNumber()
+            | FlacValue.NumberOfLeadInSamples -> this.ReadIsCueSheetCompactDisc()
+            | FlacValue.IsCueSheetCompactDisc -> this.ReadCueSheetReserved()
+            | FlacValue.CueSheetReserved -> this.ReadCueSheetNumberOfTracks()
+            | FlacValue.NumberOfTracks -> this.StartCueSheetTrack()
+            | FlacValue.TrackOffset -> this.ReadCueSheetTrackNumber()
+            | FlacValue.TrackNumber -> this.Read(FlacValue.TrackIsrc, 12)
+            | FlacValue.TrackIsrc -> this.ReadCueSheetTrackType()
+            | FlacValue.TrackType -> this.ReadCueSheetTrackPreEmphasis()
+            | FlacValue.PreEmphasis -> this.ReadCueSheetTrackReserved()
+            | FlacValue.TrackReserved -> this.ReadCueSheetNumberOfTrackIndexPoints()
+            | FlacValue.NumberOfTrackIndexPoints -> this.StartCueSheetTrackIndexPoint()
+            | FlacValue.TrackIndexOffset -> this.ReadCueSheetTrackIndexPointNumber()
+            | FlacValue.IndexPointNumber -> this.ReadCueSheetTrackIndexReserved()
+            | FlacValue.TrackIndexReserved -> this.EndCueSheetTrackIndexPoint()
+            | FlacValue.PictureType -> this.Read(FlacValue.MimeTypeLength, 4)
+            | FlacValue.MimeTypeLength -> this.ReadMimeType()
+            | FlacValue.MimeType -> this.Read(FlacValue.PictureDescriptionLength, 4)
+            | FlacValue.PictureDescriptionLength -> this.ReadPictureDescription()
+            | FlacValue.PictureDescription -> this.Read(FlacValue.PictureWidth, 4)
+            | FlacValue.PictureWidth -> this.Read(FlacValue.PictureHeight, 4)
+            | FlacValue.PictureHeight -> this.Read(FlacValue.PictureColorDepth, 4)
+            | FlacValue.PictureColorDepth -> this.Read(FlacValue.PictureNumberOfColors, 4)
+            | FlacValue.PictureNumberOfColors -> this.Read(FlacValue.PictureDataLength, 4)
+            | FlacValue.PictureDataLength -> this.ReadPictureData()
+            | FlacValue.PictureData -> this.EndMetadataBlockData()
+            | _ -> readerEx "Invalid stream position"
 
-        match this._position with
-        | StreamPosition.Start -> this.Read(StreamPosition.Marker, 4)
-        | StreamPosition.Marker -> this.ReadLastMetadataBlockFlag()
-        | StreamPosition.LastMetadataBlockFlag -> this.ReadMetadataBlockType()
-        | StreamPosition.MetadataBlockType -> this.ReadMetadataBlockLength()
-        | StreamPosition.DataBlockLength -> this.StartMetadataBlockData()
-        | StreamPosition.MinimumBlockSize -> this.Read(StreamPosition.MaximumBlockSize, 2)
-        | StreamPosition.MaximumBlockSize -> this.Read(StreamPosition.MinimumFrameSize, 3)
-        | StreamPosition.MinimumFrameSize -> this.Read(StreamPosition.MaximumFrameSize, 3)
-        | StreamPosition.MaximumFrameSize -> this.ReadSampleRate()
-        | StreamPosition.StreamInfoSampleRate -> this.ReadNumberOfChannels()
-        | StreamPosition.NumberOfChannels -> this.ReadBitsPerSample()
-        | StreamPosition.BitsPerSample -> this.ReadTotalSamples()
-        | StreamPosition.TotalSamples -> this.Read(StreamPosition.Md5Signature, 16)
-        | StreamPosition.Md5Signature -> this.EndMetadataBlockData()
-        | StreamPosition.Padding -> this.EndMetadataBlockData()
-        | StreamPosition.ApplicationId -> this.ReadApplicationData()
-        | StreamPosition.ApplicationData -> this.EndMetadataBlockData()
-        | StreamPosition.SeekPointSampleNumber -> this.Read(StreamPosition.SeekPointOffset, 8)
-        | StreamPosition.SeekPointOffset -> this.Read(StreamPosition.NumberOfSamples, 2)
-        | StreamPosition.NumberOfSamples -> this.EndSeekPoint()
-        | StreamPosition.VendorLength -> this.ReadVendorString()
-        | StreamPosition.VendorString -> this.Read(StreamPosition.UserCommentListLength, 4)
-        | StreamPosition.UserCommentListLength -> this.StartUserCommentList()
-        | StreamPosition.UserCommentLength -> this.ReadUserComment()
-        | StreamPosition.UserComment -> this.EndUserComment()
-        | StreamPosition.MediaCatalogNumber -> this.ReadCueSheetLeadInSamplesNumber()
-        | StreamPosition.NumberOfLeadInSamples -> this.ReadIsCueSheetCompactDisc()
-        | StreamPosition.IsCueSheetCompactDisc -> this.ReadCueSheetReserved()
-        | StreamPosition.CueSheetReserved -> this.ReadCueSheetNumberOfTracks()
-        | StreamPosition.NumberOfTracks -> this.StartCueSheetTrack()
-        | StreamPosition.TrackOffset -> this.ReadCueSheetTrackNumber()
-        | StreamPosition.TrackNumber -> this.Read(StreamPosition.TrackIsrc, 12)
-        | StreamPosition.TrackIsrc -> this.ReadCueSheetTrackType()
-        | StreamPosition.TrackType -> this.ReadCueSheetTrackPreEmphasis()
-        | StreamPosition.PreEmphasis -> this.ReadCueSheetTrackReserved()
-        | StreamPosition.TrackReserved -> this.ReadCueSheetNumberOfTrackIndexPoints()
-        | StreamPosition.NumberOfTrackIndexPoints -> this.StartCueSheetTrackIndexPoint()
-        | StreamPosition.TrackIndexOffset -> this.ReadCueSheetTrackIndexPointNumber()
-        | StreamPosition.IndexPointNumber -> this.ReadCueSheetTrackIndexReserved()
-        | StreamPosition.TrackIndexReserved -> this.EndCueSheetTrackIndexPoint()
-        | StreamPosition.PictureType -> this.Read(StreamPosition.MimeTypeLength, 4)
-        | StreamPosition.MimeTypeLength -> this.ReadMimeType()
-        | StreamPosition.MimeType -> this.Read(StreamPosition.PictureDescriptionLength, 4)
-        | StreamPosition.PictureDescriptionLength -> this.ReadPictureDescription()
-        | StreamPosition.PictureDescription -> this.Read(StreamPosition.PictureWidth, 4)
-        | StreamPosition.PictureWidth -> this.Read(StreamPosition.PictureHeight, 4)
-        | StreamPosition.PictureHeight -> this.Read(StreamPosition.PictureColorDepth, 4)
-        | StreamPosition.PictureColorDepth -> this.Read(StreamPosition.PictureNumberOfColors, 4)
-        | StreamPosition.PictureNumberOfColors -> this.Read(StreamPosition.PictureDataLength, 4)
-        | StreamPosition.PictureDataLength -> this.ReadPictureData()
-        | StreamPosition.PictureData -> this.EndMetadataBlockData()
-        | StreamPosition.End -> success <- false
-        | _ -> readerEx "Invalid stream position"
-
-        this._hasValue <- success
-        success
+            true
 
     member this.Skip() =
         // TODO: Optimize to skip everything but the necessary bits
         this.Read() |> ignore
 
-    member this.SkipTo(position: StreamPosition) =
-        while this.NextPosition <> position && this.Read() do
+    member this.SkipTo(value: FlacValue) =
+        while this.NextValue <> value && this.Read() do
             this.Skip()
 
-    member private this.Read(position: StreamPosition, length: int) =
+    member private this.Read(value: FlacValue, length: int) =
         this._value <- this._buffer.Slice(this._consumed, length)
         this._consumed <- this._consumed + length
-        this._position <- position
+        this._valueType <- value
 
     member private this.ReadMagic() =
         let local = this._buffer.Slice(this._consumed, 4)
@@ -255,7 +252,7 @@ type FlacStreamReader =
 
         this._value <- this._buffer.Slice(this._consumed, 1)
         this._lastMetadataBlock <- ValueSome local
-        this._position <- StreamPosition.LastMetadataBlockFlag
+        this._valueType <- FlacValue.LastMetadataBlockFlag
 
     member private this.ReadMetadataBlockType() =
         let temp = this._buffer[this._consumed]
@@ -266,7 +263,7 @@ type FlacStreamReader =
         this._value <- this._buffer.Slice(this._consumed, 1)
         this._consumed <- this._consumed + 1
         this._blockType <- ValueSome(enum<BlockType> (int local))
-        this._position <- StreamPosition.MetadataBlockType
+        this._valueType <- FlacValue.MetadataBlockType
 
     member private this.ReadMetadataBlockLength() =
         let local = this._buffer.Slice(this._consumed, 3)
@@ -275,7 +272,7 @@ type FlacStreamReader =
         this._value <- local
         this._blockLength <- ValueSome length
         this._consumed <- this._consumed + 3
-        this._position <- StreamPosition.DataBlockLength
+        this._valueType <- FlacValue.DataBlockLength
 
     member private this.StartMetadataBlockData() =
         match this._blockType with
@@ -284,11 +281,11 @@ type FlacStreamReader =
             match blockType with
             | BlockType.StreamInfo -> this.ReadMinimumBlockSize()
             | BlockType.Padding -> this.ReadMetadataBlockPadding()
-            | BlockType.Application -> this.Read(StreamPosition.ApplicationId, 4)
+            | BlockType.Application -> this.Read(FlacValue.ApplicationId, 4)
             | BlockType.SeekTable -> this.StartSeekTable()
-            | BlockType.VorbisComment -> this.Read(StreamPosition.VendorLength, 4)
+            | BlockType.VorbisComment -> this.Read(FlacValue.VendorLength, 4)
             | BlockType.CueSheet -> this.ReadCueSheetCatalogNumber()
-            | BlockType.Picture -> this.Read(StreamPosition.PictureType, 4)
+            | BlockType.Picture -> this.Read(FlacValue.PictureType, 4)
             | t when int t < 127 -> readerEx "TODO"
             | _ -> readerEx "Invalid block type"
 
@@ -299,7 +296,8 @@ type FlacStreamReader =
         | ValueSome true -> // We currently don't support anything past metadata
             this._value <- ReadOnlySpan<byte>.Empty
             this._consumed <- this._buffer.Length
-            this._position <- StreamPosition.End
+            this._valueType <- FlacValue.None
+            this._done <- true
 
     member private this.ReadMinimumBlockSize() =
         let local = this._buffer.Slice(this._consumed, 2)
@@ -310,7 +308,7 @@ type FlacStreamReader =
 
         this._value <- local
         this._consumed <- this._consumed + 2
-        this._position <- StreamPosition.MinimumBlockSize
+        this._valueType <- FlacValue.MinimumBlockSize
 
     member private this.ReadSampleRate() =
         let local = this._buffer.Slice(this._consumed, 3)
@@ -323,14 +321,14 @@ type FlacStreamReader =
         this._value <- local
         // We only fully consume the first two bytes
         this._consumed <- this._consumed + 2
-        this._position <- StreamPosition.StreamInfoSampleRate
+        this._valueType <- FlacValue.StreamInfoSampleRate
 
     member private this.ReadNumberOfChannels() =
         // TODO: This is correct for the scope of this method, but incorrect elsewhere. Why?
         // let local = this._buffer[this._consumed] &&& 0x0Euy >>> 1
         // this._value <- ReadOnlySpan<byte>(&local)
         this._value <- this._buffer.Slice(this._consumed, 1)
-        this._position <- StreamPosition.NumberOfChannels
+        this._valueType <- FlacValue.NumberOfChannels
 
     member private this.ReadBitsPerSample() =
         let local = this._buffer.Slice(this._consumed, 2)
@@ -346,11 +344,10 @@ type FlacStreamReader =
         this._value <- local
         // We only fully consume the first byte
         this._consumed <- this._consumed + 1
-        this._position <- StreamPosition.BitsPerSample
+        this._valueType <- FlacValue.BitsPerSample
 
     // TODO: How to represent this first byte requires a mask?
-    member private this.ReadTotalSamples() =
-        this.Read(StreamPosition.TotalSamples, 5)
+    member private this.ReadTotalSamples() = this.Read(FlacValue.TotalSamples, 5)
 
     member private this.ReadMetadataBlockPadding() =
         match this._blockLength with
@@ -368,7 +365,7 @@ type FlacStreamReader =
 
             this._value <- local
             this._consumed <- this._consumed + l
-            this._position <- StreamPosition.Padding
+            this._valueType <- FlacValue.Padding
 
     member private this.ReadApplicationData() =
         match this._blockLength with
@@ -381,7 +378,7 @@ type FlacStreamReader =
 
             this._value <- this._buffer.Slice(this._consumed, l)
             this._consumed <- this._consumed + l
-            this._position <- StreamPosition.ApplicationData
+            this._valueType <- FlacValue.ApplicationData
 
     member private this.StartSeekTable() =
         match this._blockLength with
@@ -393,7 +390,7 @@ type FlacStreamReader =
         this.StartSeekPoint()
 
     member private this.StartSeekPoint() =
-        this.Read(StreamPosition.SeekPointSampleNumber, 8)
+        this.Read(FlacValue.SeekPointSampleNumber, 8)
 
         match this._seekPointOffset with
         | ValueNone -> readerEx "Expected a value for SeekPointOffset"
@@ -414,7 +411,7 @@ type FlacStreamReader =
         let local = this._buffer.Slice(this._consumed, length)
 
         this._value <- local
-        this._position <- StreamPosition.VendorString
+        this._valueType <- FlacValue.VendorString
         this._consumed <- this._consumed + length
 
     member private this.StartUserCommentList() =
@@ -425,7 +422,7 @@ type FlacStreamReader =
 
         this._userCommentCount <- ValueSome length
         this._userCommentOffset <- ValueSome 0u
-        this.Read(StreamPosition.UserCommentLength, 4)
+        this.Read(FlacValue.UserCommentLength, 4)
 
     member private this.ReadUserComment() =
         if this._value.Length < 4 then
@@ -435,7 +432,7 @@ type FlacStreamReader =
         let local = this._buffer.Slice(this._consumed, length)
 
         this._value <- local
-        this._position <- StreamPosition.UserComment
+        this._valueType <- FlacValue.UserComment
         this._consumed <- this._consumed + length
 
         match this._userCommentOffset with
@@ -444,13 +441,13 @@ type FlacStreamReader =
 
     member private this.EndUserComment() =
         match this._userCommentCount, this._userCommentOffset with
-        | ValueSome n, ValueSome i when i < n -> this.Read(StreamPosition.UserCommentLength, 4)
+        | ValueSome n, ValueSome i when i < n -> this.Read(FlacValue.UserCommentLength, 4)
         | ValueSome n, ValueSome i when i = n -> this.EndMetadataBlockData()
         | _, _ -> readerEx "Expected values for UserCommentCount and UserCommentOffset"
 
     // TODO: Validate for CD-DA; offset % 588 = 0
     member private this.ReadCueSheetTrackIndexOffset() =
-        this.Read(StreamPosition.TrackIndexOffset, 8)
+        this.Read(FlacValue.TrackIndexOffset, 8)
 
     member private this.ReadCueSheetTrackIndexPointNumber() =
         let local = this._buffer[this._consumed]
@@ -460,7 +457,7 @@ type FlacStreamReader =
 
         this._value <- ReadOnlySpan<byte>(&local)
         this._consumed <- this._consumed + 1
-        this._position <- StreamPosition.IndexPointNumber
+        this._valueType <- FlacValue.IndexPointNumber
 
     member private this.ReadCueSheetTrackIndexReserved() =
         let local = this._buffer.Slice(this._consumed, 3)
@@ -470,11 +467,10 @@ type FlacStreamReader =
 
         this._value <- local
         this._consumed <- this._consumed + 3
-        this._position <- StreamPosition.TrackIndexReserved
+        this._valueType <- FlacValue.TrackIndexReserved
 
     // TODO: Validate for CD-DA; offset % 588 = 0
-    member private this.ReadCueSheetTrackOffset() =
-        this.Read(StreamPosition.TrackOffset, 8)
+    member private this.ReadCueSheetTrackOffset() = this.Read(FlacValue.TrackOffset, 8)
 
     member private this.ReadCueSheetTrackNumber() =
         let local = this._buffer[this._consumed]
@@ -485,17 +481,17 @@ type FlacStreamReader =
 
         this._value <- ReadOnlySpan<byte>(&local)
         this._consumed <- this._consumed + 1
-        this._position <- StreamPosition.TrackNumber
+        this._valueType <- FlacValue.TrackNumber
 
     member private this.ReadCueSheetTrackType() =
         let local = this._buffer[this._consumed] &&& 0x80uy
         this._value <- ReadOnlySpan<byte>(&local)
-        this._position <- StreamPosition.TrackType
+        this._valueType <- FlacValue.TrackType
 
     member private this.ReadCueSheetTrackPreEmphasis() =
         let local = this._buffer[this._consumed] &&& 0x40uy
         this._value <- ReadOnlySpan<byte>(&local)
-        this._position <- StreamPosition.PreEmphasis
+        this._valueType <- FlacValue.PreEmphasis
 
     member private this.ReadCueSheetTrackReserved() =
         let local = this._buffer.Slice(this._consumed, 14)
@@ -507,21 +503,21 @@ type FlacStreamReader =
         // TODO: How to represent this is offset by two bits?
         this._value <- local
         this._consumed <- this._consumed + 14
-        this._position <- StreamPosition.TrackReserved
+        this._valueType <- FlacValue.TrackReserved
 
     // TODO: Validate ASCII characters
     // TODO: Validate CD-DA 13 digit number + 115 NUL bytes
     member private this.ReadCueSheetCatalogNumber() =
-        this.Read(StreamPosition.MediaCatalogNumber, 128)
+        this.Read(FlacValue.MediaCatalogNumber, 128)
 
     // TODO: Do we need any validation here?
     member private this.ReadCueSheetLeadInSamplesNumber() =
-        this.Read(StreamPosition.NumberOfLeadInSamples, 8)
+        this.Read(FlacValue.NumberOfLeadInSamples, 8)
 
     member private this.ReadIsCueSheetCompactDisc() =
         let local = this._buffer[this._consumed] >>> 7
         this._value <- ReadOnlySpan<byte>(&local)
-        this._position <- StreamPosition.IsCueSheetCompactDisc
+        this._valueType <- FlacValue.IsCueSheetCompactDisc
 
     member private this.ReadCueSheetReserved() =
         let local = this._buffer.Slice(this._consumed, 259)
@@ -533,7 +529,7 @@ type FlacStreamReader =
         // TODO: How to represent this is offset by one bit?
         this._value <- local
         this._consumed <- this._consumed + 259
-        this._position <- StreamPosition.CueSheetReserved
+        this._valueType <- FlacValue.CueSheetReserved
 
     member private this.ReadCueSheetNumberOfTracks() =
         let local = this._buffer[this._consumed]
@@ -544,7 +540,7 @@ type FlacStreamReader =
 
         this._value <- ReadOnlySpan<byte>(&local)
         this._consumed <- this._consumed + 1
-        this._position <- StreamPosition.NumberOfTracks
+        this._valueType <- FlacValue.NumberOfTracks
         this._cueSheetTrackCount <- ValueSome(int local)
         this._cueSheetTrackOffset <- ValueSome 0
 
@@ -570,7 +566,7 @@ type FlacStreamReader =
 
         this._value <- ReadOnlySpan<byte>(&local)
         this._consumed <- this._consumed + 1
-        this._position <- StreamPosition.NumberOfTrackIndexPoints
+        this._valueType <- FlacValue.NumberOfTrackIndexPoints
         this._cueSheetTrackIndexCount <- ValueSome(int local)
 
     member private this.StartCueSheetTrackIndexPoint() =
@@ -595,7 +591,7 @@ type FlacStreamReader =
 
         this._value <- local
         this._consumed <- this._consumed + length
-        this._position <- StreamPosition.MimeType
+        this._valueType <- FlacValue.MimeType
 
     member private this.ReadPictureDescription() =
         if this._value.Length < 4 then
@@ -607,7 +603,7 @@ type FlacStreamReader =
 
         this._value <- local
         this._consumed <- this._consumed + length
-        this._position <- StreamPosition.PictureDescription
+        this._valueType <- FlacValue.PictureDescription
 
     member private this.ReadPictureData() =
         if this._value.Length < 4 then
@@ -619,10 +615,10 @@ type FlacStreamReader =
 
         this._value <- local
         this._consumed <- this._consumed + length
-        this._position <- StreamPosition.PictureData
+        this._valueType <- FlacValue.PictureData
 
     member this.GetLastMetadataBlockFlag() =
-        if this._position <> StreamPosition.LastMetadataBlockFlag then
+        if this._valueType <> FlacValue.LastMetadataBlockFlag then
             readerEx "Expected reader to be positioned at LastMetadataBlockFlag"
 
         this._value[0] >>> 7 = 0x1uy
@@ -632,7 +628,7 @@ type FlacStreamReader =
         this.GetLastMetadataBlockFlag()
 
     member this.GetBlockType() =
-        if this._position <> StreamPosition.MetadataBlockType then
+        if this._valueType <> FlacValue.MetadataBlockType then
             readerEx "Expected reader to be positioned at MetadataBlockType"
 
         let blockType = this._value[0] &&& 0x7Fuy |> int
@@ -643,7 +639,7 @@ type FlacStreamReader =
         this.GetBlockType()
 
     member this.GetDataBlockLength() =
-        if this._position <> StreamPosition.DataBlockLength then
+        if this._valueType <> FlacValue.DataBlockLength then
             readerEx "Expected reader to be positioned at DataBlockLength"
 
         readUInt32 this._value
@@ -653,7 +649,7 @@ type FlacStreamReader =
         this.GetDataBlockLength()
 
     member this.GetMinimumBlockSize() =
-        if this._position <> StreamPosition.MinimumBlockSize then
+        if this._valueType <> FlacValue.MinimumBlockSize then
             readerEx "Expected reader to be positioned at MinimumBlockSize"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
@@ -663,7 +659,7 @@ type FlacStreamReader =
         this.GetMinimumBlockSize()
 
     member this.GetMaximumBlockSize() =
-        if this._position <> StreamPosition.MaximumBlockSize then
+        if this._valueType <> FlacValue.MaximumBlockSize then
             readerEx "Expected reader to be positioned at MaximumBlockSize"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
@@ -673,7 +669,7 @@ type FlacStreamReader =
         this.GetMaximumBlockSize()
 
     member this.GetMinimumFrameSize() =
-        if this._position <> StreamPosition.MinimumFrameSize then
+        if this._valueType <> FlacValue.MinimumFrameSize then
             readerEx "Expected reader to be positioned at MinimumFrameSize"
 
         readUInt32 this._value
@@ -683,7 +679,7 @@ type FlacStreamReader =
         this.GetMinimumFrameSize()
 
     member this.GetMaximumFrameSize() =
-        if this._position <> StreamPosition.MaximumFrameSize then
+        if this._valueType <> FlacValue.MaximumFrameSize then
             readerEx "Expected reader to be positioned at MaximumFrameSize"
 
         readUInt32 this._value
@@ -693,7 +689,7 @@ type FlacStreamReader =
         this.GetMaximumFrameSize()
 
     member this.GetSampleRate() =
-        if this._position <> StreamPosition.StreamInfoSampleRate then
+        if this._valueType <> FlacValue.StreamInfoSampleRate then
             readerEx "Expected reader to be positioned at StreamInfoSampleRate"
 
         readUInt32 this._value >>> 4
@@ -703,7 +699,7 @@ type FlacStreamReader =
         this.GetSampleRate()
 
     member this.GetChannels() =
-        if this._position <> StreamPosition.NumberOfChannels then
+        if this._valueType <> FlacValue.NumberOfChannels then
             readerEx "Expected reader to be positioned at NumberOfChannels"
 
         uint16 (this._value[0] &&& 0x0Euy >>> 1) + 1us
@@ -713,7 +709,7 @@ type FlacStreamReader =
         this.GetChannels()
 
     member this.GetBitsPerSample() =
-        if this._position <> StreamPosition.BitsPerSample then
+        if this._valueType <> FlacValue.BitsPerSample then
             readerEx "Expected reader to be positioned at BitsPerSample"
 
         let a = uint16 (this._value[0] &&& 0x01uy) <<< 13
@@ -725,7 +721,7 @@ type FlacStreamReader =
         this.GetBitsPerSample()
 
     member this.GetTotalSamples() =
-        if this._position <> StreamPosition.TotalSamples then
+        if this._valueType <> FlacValue.TotalSamples then
             readerEx "Expected reader to be positioned at TotalSamples"
 
         let a = uint64 (this._value[0] &&& 0x0Fuy) <<< 8 * 4
@@ -740,7 +736,7 @@ type FlacStreamReader =
         this.GetTotalSamples()
 
     member this.GetMd5Signature() =
-        if this._position <> StreamPosition.Md5Signature then
+        if this._valueType <> FlacValue.Md5Signature then
             readerEx "Expected reader to be positioned at Md5Signature"
 
         Convert.ToHexString(this._value)
@@ -750,7 +746,7 @@ type FlacStreamReader =
         this.GetMd5Signature()
 
     member this.GetSeekPointSampleNumber() =
-        if this._position <> StreamPosition.SeekPointSampleNumber then
+        if this._valueType <> FlacValue.SeekPointSampleNumber then
             readerEx "Expected reader to be positioned at SeekPointSampleNumber"
 
         BinaryPrimitives.ReadUInt64BigEndian(this._value)
@@ -760,7 +756,7 @@ type FlacStreamReader =
         this.GetSeekPointSampleNumber()
 
     member this.GetSeekPointOffset() =
-        if this._position <> StreamPosition.SeekPointOffset then
+        if this._valueType <> FlacValue.SeekPointOffset then
             readerEx "Expected reader to be positioned at SeekPointOffset"
 
         BinaryPrimitives.ReadUInt64BigEndian(this._value)
@@ -770,7 +766,7 @@ type FlacStreamReader =
         this.GetSeekPointOffset()
 
     member this.GetSeekPointNumberOfSamples() =
-        if this._position <> StreamPosition.NumberOfSamples then
+        if this._valueType <> FlacValue.NumberOfSamples then
             readerEx "Expected reader to be positioned at NumberOfSamples"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
@@ -780,7 +776,7 @@ type FlacStreamReader =
         this.GetSeekPointNumberOfSamples()
 
     member this.GetVendorLength() =
-        if this._position <> StreamPosition.VendorLength then
+        if this._valueType <> FlacValue.VendorLength then
             readerEx "Expected reader to be positioned at VendorLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
@@ -790,7 +786,7 @@ type FlacStreamReader =
         this.GetVendorLength()
 
     member this.GetVendorString() =
-        if this._position <> StreamPosition.VendorString then
+        if this._valueType <> FlacValue.VendorString then
             readerEx "Expected reader to be positioned at VendorString"
 
         Encoding.UTF8.GetString(this._value)
@@ -800,7 +796,7 @@ type FlacStreamReader =
         this.GetVendorString()
 
     member this.GetUserCommentListLength() =
-        if this._position <> StreamPosition.UserCommentListLength then
+        if this._valueType <> FlacValue.UserCommentListLength then
             readerEx "Expected reader to be positioned at UserCommentListLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
@@ -810,7 +806,7 @@ type FlacStreamReader =
         this.GetUserCommentListLength()
 
     member this.GetUserCommentLength() =
-        if this._position <> StreamPosition.UserCommentLength then
+        if this._valueType <> FlacValue.UserCommentLength then
             readerEx "Expected reader to be positioned at UserCommentLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
@@ -820,7 +816,7 @@ type FlacStreamReader =
         this.GetUserCommentLength()
 
     member this.GetUserComment() =
-        if this._position <> StreamPosition.UserComment then
+        if this._valueType <> FlacValue.UserComment then
             readerEx "Expected reader to be positioned at UserComment"
 
         Encoding.UTF8.GetString(this._value)
@@ -830,7 +826,7 @@ type FlacStreamReader =
         this.GetUserComment()
 
     member this.GetPictureType() =
-        if this._position <> StreamPosition.PictureType then
+        if this._valueType <> FlacValue.PictureType then
             readerEx "Expected reader to be positioned at PictureType"
 
         let pictureType = BinaryPrimitives.ReadUInt32BigEndian(this._value)
@@ -841,7 +837,7 @@ type FlacStreamReader =
         this.GetPictureType()
 
     member this.GetMimeTypeLength() =
-        if this._position <> StreamPosition.MimeTypeLength then
+        if this._valueType <> FlacValue.MimeTypeLength then
             readerEx "Expected reader to be positioned at MimeTypeLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
@@ -851,7 +847,7 @@ type FlacStreamReader =
         this.GetMimeTypeLength()
 
     member this.GetMimeType() =
-        if this._position <> StreamPosition.MimeType then
+        if this._valueType <> FlacValue.MimeType then
             readerEx "Expected reader to be positioned at MimeType"
 
         Encoding.UTF8.GetString(this._value)
@@ -861,7 +857,7 @@ type FlacStreamReader =
         this.GetMimeType()
 
     member this.GetPictureDescriptionLength() =
-        if this._position <> StreamPosition.PictureDescriptionLength then
+        if this._valueType <> FlacValue.PictureDescriptionLength then
             readerEx "Expected reader to be positioned at PictureDescriptionLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
@@ -871,7 +867,7 @@ type FlacStreamReader =
         this.GetPictureDescriptionLength()
 
     member this.GetPictureDescription() =
-        if this._position <> StreamPosition.PictureDescription then
+        if this._valueType <> FlacValue.PictureDescription then
             readerEx "Expected reader to be positioned at PictureDescription"
 
         Encoding.UTF8.GetString(this._value)
@@ -881,7 +877,7 @@ type FlacStreamReader =
         this.GetPictureDescription()
 
     member this.GetPictureWidth() =
-        if this._position <> StreamPosition.PictureWidth then
+        if this._valueType <> FlacValue.PictureWidth then
             readerEx "Expected reader to be positioned at PictureWidth"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
@@ -891,7 +887,7 @@ type FlacStreamReader =
         this.GetPictureWidth()
 
     member this.GetPictureHeight() =
-        if this._position <> StreamPosition.PictureHeight then
+        if this._valueType <> FlacValue.PictureHeight then
             readerEx "Expected reader to be positioned at PictureHeight"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
@@ -901,7 +897,7 @@ type FlacStreamReader =
         this.GetPictureHeight()
 
     member this.GetPictureColorDepth() =
-        if this._position <> StreamPosition.PictureColorDepth then
+        if this._valueType <> FlacValue.PictureColorDepth then
             readerEx "Expected reader to be positioned at PictureColorDepth"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
@@ -911,7 +907,7 @@ type FlacStreamReader =
         this.GetPictureColorDepth()
 
     member this.GetPictureNumberOfColors() =
-        if this._position <> StreamPosition.PictureNumberOfColors then
+        if this._valueType <> FlacValue.PictureNumberOfColors then
             readerEx "Expected reader to be positioned at PictureNumberOfColors"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
@@ -921,7 +917,7 @@ type FlacStreamReader =
         this.GetPictureNumberOfColors()
 
     member this.GetPictureDataLength() =
-        if this._position <> StreamPosition.PictureDataLength then
+        if this._valueType <> FlacValue.PictureDataLength then
             readerEx "Expected reader to be positioned at PictureDataLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
@@ -931,7 +927,7 @@ type FlacStreamReader =
         this.GetPictureDataLength()
 
     member this.GetPictureData() =
-        if this._position <> StreamPosition.PictureData then
+        if this._valueType <> FlacValue.PictureData then
             readerEx "Expected reader to be positioned at PictureData"
 
         this._value
