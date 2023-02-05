@@ -184,15 +184,15 @@ let readMetadataBlock (reader: byref<FlacStreamReader>) =
     { Header = header; Data = data }
 
 let readStream (reader: byref<FlacStreamReader>) =
-    reader.Read() |> ignore // Read magic
+    readMagic &reader |> ignore
     let streamInfo = readMetadataBlock &reader
 
     if streamInfo.Header.BlockType <> BlockType.StreamInfo then
         readerEx "Stream info must be the first block"
 
-    let mutable metadata = List.empty
+    let mutable metadata = [ streamInfo ]
 
     while reader.NextPosition <> StreamPosition.End do
         metadata <- (readMetadataBlock &reader) :: metadata
 
-    { Metadata = metadata }
+    { Metadata = metadata |> List.rev }
