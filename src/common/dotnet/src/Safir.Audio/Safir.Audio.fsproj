@@ -15,6 +15,7 @@
     <Compile Include="Vorbis\VorbisCs.fs" />
     <Compile Include="Flac\FlacConstants.fs" />
     <Compile Include="Flac\FlacTypes.fs" />
+    <Compile Include="Flac\FlacStreamState.fs" />
     <Compile Include="Flac\FlacStreamReader.fs" />
     <Compile Include="Flac\Flac.fs" />
     <Compile Include="Flac\FlacCsTypes.fs" />
