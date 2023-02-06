@@ -56,6 +56,7 @@ type FlacValue =
     | PictureNumberOfColors = 48
     | PictureDataLength = 49
     | PictureData = 50
+    | MetadataBlockData = 81
 
 type BlockType =
     | StreamInfo = 0
@@ -157,7 +158,7 @@ type MetadataBlockData =
     | VorbisComment of MetadataBlockVorbisComment
     | CueSheet of MetadataBlockCueSheet
     | Picture of MetadataBlockPicture
-    | Skipped
+    | Skipped of byte array
 
 type MetadataBlock =
     { Header: MetadataBlockHeader

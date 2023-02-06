@@ -85,7 +85,7 @@ let ToMetadataBlockDataCs =
     | VorbisComment x -> ToMetadataBlockVorbisCommentCs x
     | CueSheet x -> ToMetadataBlockCueSheetCs x
     | Picture x -> ToMetadataBlockPictureCs x
-    | Skipped -> readerEx "TODO"
+    | Skipped x -> MetadataBlockSkippedCs(x)
 
 let ToMetadataBlockCs block =
     MetadataBlockCs(block.Header, block.Data |> ToMetadataBlockDataCs)

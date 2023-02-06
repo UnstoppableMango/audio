@@ -164,8 +164,8 @@ let readMetadataBlockData (reader: byref<FlacStreamReader>) =
     | BlockType.VorbisComment -> VorbisComment(readMetadataBlockVorbisComment &reader)
     | BlockType.CueSheet -> CueSheet(readMetadataBlockCueSheet &reader)
     | BlockType.Picture -> Picture(readMetadataBlockPicture &reader)
-    | BlockType.Invalid -> readerEx "Invalid block type"
-    | _ -> readerEx "TODO: Skip logic"
+    | t when t < BlockType.Invalid -> Skipped(reader.Value.ToArray())
+    | _ -> readerEx "Invalid block type"
 
 let readMetadataBlock (reader: byref<FlacStreamReader>) =
     let header = readMetadataBlockHeader &reader

@@ -264,8 +264,13 @@ type FlacStreamReader =
             | BlockType.VorbisComment -> this.Read(FlacValue.VendorLength, 4)
             | BlockType.CueSheet -> this.ReadCueSheetCatalogNumber()
             | BlockType.Picture -> this.Read(FlacValue.PictureType, 4)
-            | t when int t < 127 -> readerEx "TODO"
+            | t when t < BlockType.Invalid -> this.ReadMetadataBlockData()
             | _ -> readerEx "Invalid block type"
+
+    member private this.ReadMetadataBlockData() =
+        match this._blockLength with
+        | ValueNone -> readerEx "Expected a value for BlockLength"
+        | ValueSome length -> this.Read(FlacValue.MetadataBlockData, int length)
 
     member private this.EndMetadataBlockData() =
         match this._lastMetadataBlock with
