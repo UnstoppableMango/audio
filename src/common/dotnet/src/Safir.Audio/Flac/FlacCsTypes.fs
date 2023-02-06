@@ -108,6 +108,10 @@ type MetadataBlockPictureCs
     member this.DataLength = dataLength
     member this.Data = data
 
+type MetadataBlockSkippedCs(data: byte array) =
+    inherit MetadataBlockDataCs()
+    member this.Data = data
+
 type MetadataBlockCs(header: MetadataBlockHeader, data: MetadataBlockDataCs) =
     member this.Header = header
     member this.Data = data
