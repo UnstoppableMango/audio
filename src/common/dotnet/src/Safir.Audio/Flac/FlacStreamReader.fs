@@ -53,7 +53,12 @@ type FlacStreamReader =
     member this.ValueType = if this._hasValue then this._valueType else FlacValue.None
     member this.Value = this._value
 
-    // TODO: If we keep this, DRY the logic
+    member private this.NextMetadataBlock =
+        match this._lastMetadataBlock with
+        | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
+        | ValueSome false -> FlacValue.LastMetadataBlockFlag
+        | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
+
     member this.NextValue =
         match this._valueType with
         | FlacValue.None -> FlacValue.Marker
@@ -81,32 +86,16 @@ type FlacStreamReader =
         | FlacValue.NumberOfChannels -> FlacValue.BitsPerSample
         | FlacValue.BitsPerSample -> FlacValue.TotalSamples
         | FlacValue.TotalSamples -> FlacValue.Md5Signature
-        | FlacValue.Md5Signature ->
-            match this._lastMetadataBlock with
-            | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-            | ValueSome false -> FlacValue.LastMetadataBlockFlag
-            | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
-        | FlacValue.Padding ->
-            match this._lastMetadataBlock with
-            | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-            | ValueSome false -> FlacValue.LastMetadataBlockFlag
-            | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
+        | FlacValue.Md5Signature -> this.NextMetadataBlock
+        | FlacValue.Padding -> this.NextMetadataBlock
         | FlacValue.ApplicationId -> FlacValue.ApplicationData
-        | FlacValue.ApplicationData ->
-            match this._lastMetadataBlock with
-            | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-            | ValueSome false -> FlacValue.LastMetadataBlockFlag
-            | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
+        | FlacValue.ApplicationData -> this.NextMetadataBlock
         | FlacValue.SeekPointSampleNumber -> FlacValue.SeekPointOffset
         | FlacValue.SeekPointOffset -> FlacValue.NumberOfSamples
         | FlacValue.NumberOfSamples ->
             match this._seekPointCount, this._seekPointOffset with
             | ValueSome n, ValueSome i when i < n -> FlacValue.SeekPointSampleNumber
-            | ValueSome n, ValueSome i when i = n ->
-                match this._lastMetadataBlock with
-                | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-                | ValueSome false -> FlacValue.LastMetadataBlockFlag
-                | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
+            | ValueSome n, ValueSome i when i = n -> this.NextMetadataBlock
             | _, _ -> readerEx "Expected values for SeekPointCount and SeekPointOffset"
         | FlacValue.VendorLength -> FlacValue.VendorString
         | FlacValue.VendorString -> FlacValue.UserCommentListLength
@@ -115,11 +104,7 @@ type FlacStreamReader =
         | FlacValue.UserComment ->
             match this._userCommentCount, this._userCommentOffset with
             | ValueSome n, ValueSome i when i < n -> FlacValue.UserCommentLength
-            | ValueSome n, ValueSome i when i = n ->
-                match this._lastMetadataBlock with
-                | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-                | ValueSome false -> FlacValue.LastMetadataBlockFlag
-                | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
+            | ValueSome n, ValueSome i when i = n -> this.NextMetadataBlock
             | _, _ -> readerEx "Expected values for UserCommentCount and UserCommentOffset"
         | FlacValue.MediaCatalogNumber -> FlacValue.NumberOfLeadInSamples
         | FlacValue.NumberOfLeadInSamples -> FlacValue.IsCueSheetCompactDisc
@@ -141,11 +126,7 @@ type FlacStreamReader =
             | ValueSome n, ValueSome i when i = n ->
                 match this._cueSheetTrackCount, this._cueSheetTrackOffset with
                 | ValueSome n, ValueSome i when i < n -> FlacValue.TrackOffset
-                | ValueSome n, ValueSome i when i = n ->
-                    match this._lastMetadataBlock with
-                    | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-                    | ValueSome false -> FlacValue.LastMetadataBlockFlag
-                    | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
+                | ValueSome n, ValueSome i when i = n -> this.NextMetadataBlock
                 | _, _ -> readerEx "Expected values for CueSheetTrackCount and CueSheetTrackOffset"
             | _, _ -> readerEx "Expected values for CueSheetTrackIndexCount and CueSheetTrackIndexOffset"
         | FlacValue.PictureType -> FlacValue.MimeTypeLength
@@ -158,11 +139,7 @@ type FlacStreamReader =
         | FlacValue.PictureColorDepth -> FlacValue.PictureNumberOfColors
         | FlacValue.PictureNumberOfColors -> FlacValue.PictureDataLength
         | FlacValue.PictureDataLength -> FlacValue.PictureData
-        | FlacValue.PictureData ->
-            match this._lastMetadataBlock with
-            | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
-            | ValueSome false -> FlacValue.LastMetadataBlockFlag
-            | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
+        | FlacValue.PictureData -> this.NextMetadataBlock
         | _ -> readerEx "Invalid stream position"
 
     member this.Read() =
