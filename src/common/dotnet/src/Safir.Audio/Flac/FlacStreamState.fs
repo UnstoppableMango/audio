@@ -3,6 +3,7 @@ namespace Safir.Audio.Flac
 open System.Runtime.CompilerServices
 open Safir.Audio
 
+// TODO: More fine-grained state functions
 [<Struct; IsReadOnly>]
 type FlacStreamState =
     { BlockLength: ValueOption<uint32>

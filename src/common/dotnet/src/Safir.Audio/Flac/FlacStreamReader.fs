@@ -13,10 +13,10 @@ open Safir.Audio
 type FlacStreamReader =
     val private _buffer: ReadOnlySpan<byte>
 
-    val mutable private _valueType: FlacValue
     val mutable private _consumed: int
     val mutable private _value: ReadOnlySpan<byte>
-    val mutable private _done: bool
+    val mutable private _hasValue: bool
+    val mutable private _valueType: FlacValue
 
     val mutable private _blockLength: ValueOption<uint32>
     val mutable private _blockType: ValueOption<BlockType>
@@ -32,10 +32,10 @@ type FlacStreamReader =
 
     new(buffer: ReadOnlySpan<byte>, state: FlacStreamState) =
         { _buffer = buffer
-          _valueType = state.Value
           _consumed = 0
           _value = ReadOnlySpan<byte>.Empty
-          _done = false
+          _hasValue = false
+          _valueType = state.Value
           _blockLength = state.BlockLength
           _blockType = state.BlockType
           _lastMetadataBlock = state.LastMetadataBlock
@@ -50,7 +50,7 @@ type FlacStreamReader =
 
     new(buffer: ReadOnlySpan<byte>) = FlacStreamReader(buffer, FlacStreamState.Empty)
 
-    member this.ValueType = this._valueType
+    member this.ValueType = if this._hasValue then this._valueType else FlacValue.None
     member this.Value = this._value
 
     // TODO: If we keep this, DRY the logic
@@ -166,7 +166,7 @@ type FlacStreamReader =
         | _ -> readerEx "Invalid stream position"
 
     member this.Read() =
-        if this._done then
+        if this._buffer.Length = this._consumed then
             false
         else
             match this._valueType with
@@ -223,6 +223,7 @@ type FlacStreamReader =
             | FlacValue.PictureData -> this.EndMetadataBlockData()
             | _ -> readerEx "Invalid stream position"
 
+            this._hasValue <- true
             true
 
     member this.Skip() =
@@ -231,7 +232,7 @@ type FlacStreamReader =
 
     member this.SkipTo(value: FlacValue) =
         while this.NextValue <> value && this.Read() do
-            this.Skip()
+            () // We advance in the loop condition
 
     member private this.Read(value: FlacValue, length: int) =
         this._value <- this._buffer.Slice(this._consumed, length)
@@ -297,7 +298,6 @@ type FlacStreamReader =
             this._value <- ReadOnlySpan<byte>.Empty
             this._consumed <- this._buffer.Length
             this._valueType <- FlacValue.None
-            this._done <- true
 
     member private this.ReadMinimumBlockSize() =
         let local = this._buffer.Slice(this._consumed, 2)
