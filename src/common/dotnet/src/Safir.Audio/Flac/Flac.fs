@@ -13,9 +13,9 @@ let readMagic (reader: byref<FlacStreamReader>) =
         readerEx "Invalid Flac stream"
 
 let readMetadataBlockHeader (reader: byref<FlacStreamReader>) =
-    reader.Skip() // Last block
+    reader.ReadAsLastMetadataBlockFlag() |> ignore
     let blockType = reader.ReadAsBlockType()
-    reader.Skip() // Block length
+    reader.ReadAsDataBlockLength() |> ignore
 
     { BlockType = blockType }
 
@@ -54,8 +54,7 @@ let readMetadataBlockSeekTable (reader: byref<FlacStreamReader>) =
     { Points = seekPoints |> List.rev }
 
 let readVorbisComment (reader: byref<FlacStreamReader>) =
-    reader.Read() |> ignore // Comment length
-
+    reader.ReadAsUserCommentLength() |> ignore
     let comment = reader.ReadAsUserComment()
 
     match Vorbis.toComment comment with
@@ -65,10 +64,9 @@ let readVorbisComment (reader: byref<FlacStreamReader>) =
 let readMetadataBlockVorbisComment (reader: byref<FlacStreamReader>) =
     let mutable comments = List.empty
 
-    reader.Read() |> ignore // Vendor length
+    reader.ReadAsVendorLength() |> ignore
     let vendor = reader.ReadAsVendorString()
-
-    reader.Read() |> ignore // User Comment List Length
+    reader.ReadAsUserCommentListLength() |> ignore
 
     while reader.NextValue <> FlacValue.LastMetadataBlockFlag do
         comments <- (readVorbisComment &reader) :: comments
@@ -135,9 +133,9 @@ let readMetadataBlockCueSheet (reader: byref<FlacStreamReader>) =
 
 let readMetadataBlockPicture (reader: byref<FlacStreamReader>) =
     let pictureType = reader.ReadAsPictureType()
-    reader.Read() |> ignore // Mime length
+    reader.ReadAsMimeTypeLength() |> ignore
     let mimeType = reader.ReadAsMimeType()
-    reader.Read() |> ignore // Description length
+    reader.ReadAsPictureDescriptionLength() |> ignore
     let description = reader.ReadAsPictureDescription()
     let width = int <| reader.ReadAsPictureWidth()
     let height = int <| reader.ReadAsPictureHeight()

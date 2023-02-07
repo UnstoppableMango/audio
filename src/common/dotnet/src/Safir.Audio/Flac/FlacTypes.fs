@@ -4,6 +4,8 @@ open System.Runtime.CompilerServices
 open Safir.Audio
 open Safir.Audio.Vorbis
 
+exception FlacStreamReaderException of string
+
 type FlacValue =
     | None = 0
     | Marker = 1

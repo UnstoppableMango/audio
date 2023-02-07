@@ -2,7 +2,6 @@ module Safir.Audio.Vorbis.Vorbis
 
 open System
 open System.Buffers.Binary
-open Safir.Audio
 
 let private throw m : unit = invalidOp m
 
@@ -23,7 +22,7 @@ let readComment (f: ReadOnlySpan<byte>) =
     let name = rest.Slice(0, midIndex)
     let value = rest.Slice(midIndex + 1, (int length) - midIndex - 1)
 
-    readerEx "TODO"
+    raise (NotImplementedException())
     // { Length = length
     //   Name = name
     //   Value = value }
@@ -56,7 +55,7 @@ let readCommentHeader (f: ReadOnlySpan<byte>) (length: int) =
     if f[offset + 1] &&& 0x01uy = 0x00uy then
         throw "Missing framing bit"
 
-    readerEx "TODO"
+    raise (NotImplementedException())
     // { VendorLength = vendorLength
     //   VendorString = vendorString
     //   UserCommentListLength = listLength
