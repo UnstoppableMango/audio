@@ -77,7 +77,7 @@ type FlacStreamReader =
                 | BlockType.VorbisComment -> FlacValue.VendorLength
                 | BlockType.CueSheet -> FlacValue.MediaCatalogNumber
                 | BlockType.Picture -> FlacValue.PictureType
-                | _ -> flacEx "Unknown block type"
+                | _ -> flacEx "Unknown block type" // TODO: This should probably reflect the skip logic
         | FlacValue.MinimumBlockSize -> FlacValue.MaximumBlockSize
         | FlacValue.MaximumBlockSize -> FlacValue.MinimumFrameSize
         | FlacValue.MinimumFrameSize -> FlacValue.MaximumFrameSize
