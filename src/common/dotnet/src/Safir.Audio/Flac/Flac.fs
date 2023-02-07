@@ -10,7 +10,7 @@ let readMagic (reader: byref<FlacStreamReader>) =
     if reader.Read() && reader.Value.SequenceEqual("fLaC"B) then
         Encoding.ASCII.GetString(reader.Value)
     else
-        readerEx "Invalid Flac stream"
+        flacEx "Invalid Flac stream"
 
 let readMetadataBlockHeader (reader: byref<FlacStreamReader>) =
     reader.ReadAsLastMetadataBlockFlag() |> ignore
@@ -35,8 +35,8 @@ let readMetadataBlockPadding (reader: byref<FlacStreamReader>) =
     MetadataBlockPadding reader.Value.Length
 
 let readMetadataBlockApplication (reader: byref<FlacStreamReader>) =
-    { ApplicationId = readerEx "TODO"
-      ApplicationData = readerEx "TODO" }
+    { ApplicationId = flacEx "TODO"
+      ApplicationData = flacEx "TODO" }
 
 let readSeekPoint (reader: byref<FlacStreamReader>) =
     {| SampleNumber = int64 <| reader.ReadAsSeekPointSampleNumber()
@@ -59,7 +59,7 @@ let readVorbisComment (reader: byref<FlacStreamReader>) =
 
     match Vorbis.toComment comment with
     | Some comment -> comment
-    | None -> readerEx "Invalid user comment"
+    | None -> flacEx "Invalid user comment"
 
 let readMetadataBlockVorbisComment (reader: byref<FlacStreamReader>) =
     let mutable comments = List.empty
@@ -82,7 +82,7 @@ let readCueSheetTrackIndex (f: ReadOnlySpan<byte>) =
     let indexPoint = uint16 f[8]
 
     if f.Slice(9, 3 * 8).IndexOfAnyExcept(0uy) <> -1 then
-        readerEx "Non-zero bit found in reserved block"
+        flacEx "Non-zero bit found in reserved block"
 
     { Offset = int64 offset
       IndexPoint = int indexPoint }
@@ -101,7 +101,7 @@ let readCueSheetTrack (f: ReadOnlySpan<byte>) =
 
     // Skip 6 + 13 * 8
     if f.Slice(offset, 13 * 8).IndexOfAnyExcept(0uy) <> -1 then
-        readerEx "Non-zero bit found in reserved block"
+        flacEx "Non-zero bit found in reserved block"
 
     offset <- offset + (13 * 8)
 
@@ -163,7 +163,7 @@ let readMetadataBlockData (reader: byref<FlacStreamReader>) =
     | BlockType.CueSheet -> CueSheet(readMetadataBlockCueSheet &reader)
     | BlockType.Picture -> Picture(readMetadataBlockPicture &reader)
     | t when t < BlockType.Invalid -> Skipped(reader.Value.ToArray())
-    | _ -> readerEx "Invalid block type"
+    | _ -> flacEx "Invalid block type"
 
 let readMetadataBlock (reader: byref<FlacStreamReader>) =
     let header = readMetadataBlockHeader &reader
@@ -176,7 +176,7 @@ let readStream (reader: byref<FlacStreamReader>) =
     let streamInfo = readMetadataBlock &reader
 
     if streamInfo.Header.BlockType <> BlockType.StreamInfo then
-        readerEx "Stream info must be the first block"
+        flacEx "Stream info must be the first block"
 
     let mutable metadata = [ streamInfo ]
 

@@ -55,7 +55,7 @@ type FlacStreamReader =
 
     member private this.NextMetadataBlock =
         match this._lastMetadataBlock with
-        | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
+        | ValueNone -> flacEx "Expected a value for LastMetadataBlock"
         | ValueSome false -> FlacValue.LastMetadataBlockFlag
         | ValueSome true -> FlacValue.None // We currently don't support anything past metadata
 
@@ -67,7 +67,7 @@ type FlacStreamReader =
         | FlacValue.MetadataBlockType -> FlacValue.DataBlockLength
         | FlacValue.DataBlockLength ->
             match this._blockType with
-            | ValueNone -> readerEx "Expected a value for BlockType"
+            | ValueNone -> flacEx "Expected a value for BlockType"
             | ValueSome blockType ->
                 match blockType with
                 | BlockType.StreamInfo -> FlacValue.MinimumBlockSize
@@ -77,7 +77,7 @@ type FlacStreamReader =
                 | BlockType.VorbisComment -> FlacValue.VendorLength
                 | BlockType.CueSheet -> FlacValue.MediaCatalogNumber
                 | BlockType.Picture -> FlacValue.PictureType
-                | _ -> readerEx "Unknown block type"
+                | _ -> flacEx "Unknown block type"
         | FlacValue.MinimumBlockSize -> FlacValue.MaximumBlockSize
         | FlacValue.MaximumBlockSize -> FlacValue.MinimumFrameSize
         | FlacValue.MinimumFrameSize -> FlacValue.MaximumFrameSize
@@ -96,7 +96,7 @@ type FlacStreamReader =
             match this._seekPointCount, this._seekPointOffset with
             | ValueSome n, ValueSome i when i < n -> FlacValue.SeekPointSampleNumber
             | ValueSome n, ValueSome i when i = n -> this.NextMetadataBlock
-            | _, _ -> readerEx "Expected values for SeekPointCount and SeekPointOffset"
+            | _, _ -> flacEx "Expected values for SeekPointCount and SeekPointOffset"
         | FlacValue.VendorLength -> FlacValue.VendorString
         | FlacValue.VendorString -> FlacValue.UserCommentListLength
         | FlacValue.UserCommentListLength -> FlacValue.UserCommentLength
@@ -105,7 +105,7 @@ type FlacStreamReader =
             match this._userCommentCount, this._userCommentOffset with
             | ValueSome n, ValueSome i when i < n -> FlacValue.UserCommentLength
             | ValueSome n, ValueSome i when i = n -> this.NextMetadataBlock
-            | _, _ -> readerEx "Expected values for UserCommentCount and UserCommentOffset"
+            | _, _ -> flacEx "Expected values for UserCommentCount and UserCommentOffset"
         | FlacValue.MediaCatalogNumber -> FlacValue.NumberOfLeadInSamples
         | FlacValue.NumberOfLeadInSamples -> FlacValue.IsCueSheetCompactDisc
         | FlacValue.IsCueSheetCompactDisc -> FlacValue.CueSheetReserved
@@ -127,8 +127,8 @@ type FlacStreamReader =
                 match this._cueSheetTrackCount, this._cueSheetTrackOffset with
                 | ValueSome n, ValueSome i when i < n -> FlacValue.TrackOffset
                 | ValueSome n, ValueSome i when i = n -> this.NextMetadataBlock
-                | _, _ -> readerEx "Expected values for CueSheetTrackCount and CueSheetTrackOffset"
-            | _, _ -> readerEx "Expected values for CueSheetTrackIndexCount and CueSheetTrackIndexOffset"
+                | _, _ -> flacEx "Expected values for CueSheetTrackCount and CueSheetTrackOffset"
+            | _, _ -> flacEx "Expected values for CueSheetTrackIndexCount and CueSheetTrackIndexOffset"
         | FlacValue.PictureType -> FlacValue.MimeTypeLength
         | FlacValue.MimeTypeLength -> FlacValue.MimeType
         | FlacValue.MimeType -> FlacValue.PictureDescriptionLength
@@ -140,7 +140,7 @@ type FlacStreamReader =
         | FlacValue.PictureNumberOfColors -> FlacValue.PictureDataLength
         | FlacValue.PictureDataLength -> FlacValue.PictureData
         | FlacValue.PictureData -> this.NextMetadataBlock
-        | _ -> readerEx "Invalid stream position"
+        | _ -> flacEx "Invalid stream position"
 
     member this.Read() =
         if this._buffer.Length = this._consumed then
@@ -198,7 +198,7 @@ type FlacStreamReader =
             | FlacValue.PictureNumberOfColors -> this.Read(FlacValue.PictureDataLength, 4)
             | FlacValue.PictureDataLength -> this.ReadPictureData()
             | FlacValue.PictureData -> this.EndMetadataBlockData()
-            | _ -> readerEx "Invalid stream position"
+            | _ -> flacEx "Invalid stream position"
 
             this._hasValue <- true
             true
@@ -220,7 +220,7 @@ type FlacStreamReader =
         let local = this._buffer.Slice(this._consumed, 4)
 
         if not <| local.SequenceEqual("fLaC"B) then
-            readerEx "Invalid stream marker"
+            flacEx "Invalid stream marker"
 
         this._value <- local
         this._consumed <- this._consumed + 4
@@ -236,7 +236,7 @@ type FlacStreamReader =
         let temp = this._buffer[this._consumed]
         let local = temp &&& 0x7Fuy // TODO: DRY
 
-        if local > 127uy then readerEx "Invalid metadata block type"
+        if local > 127uy then flacEx "Invalid metadata block type"
 
         this._value <- this._buffer.Slice(this._consumed, 1)
         this._consumed <- this._consumed + 1
@@ -254,7 +254,7 @@ type FlacStreamReader =
 
     member private this.StartMetadataBlockData() =
         match this._blockType with
-        | ValueNone -> readerEx "Expected a value for BlockType"
+        | ValueNone -> flacEx "Expected a value for BlockType"
         | ValueSome blockType ->
             match blockType with
             | BlockType.StreamInfo -> this.ReadMinimumBlockSize()
@@ -265,16 +265,16 @@ type FlacStreamReader =
             | BlockType.CueSheet -> this.ReadCueSheetCatalogNumber()
             | BlockType.Picture -> this.Read(FlacValue.PictureType, 4)
             | t when t < BlockType.Invalid -> this.ReadMetadataBlockData()
-            | _ -> readerEx "Invalid block type"
+            | _ -> flacEx "Invalid block type"
 
     member private this.ReadMetadataBlockData() =
         match this._blockLength with
-        | ValueNone -> readerEx "Expected a value for BlockLength"
+        | ValueNone -> flacEx "Expected a value for BlockLength"
         | ValueSome length -> this.Read(FlacValue.MetadataBlockData, int length)
 
     member private this.EndMetadataBlockData() =
         match this._lastMetadataBlock with
-        | ValueNone -> readerEx "Expected a value for LastMetadataBlock"
+        | ValueNone -> flacEx "Expected a value for LastMetadataBlock"
         | ValueSome false -> this.ReadLastMetadataBlockFlag()
         | ValueSome true -> // We currently don't support anything past metadata
             this._value <- ReadOnlySpan<byte>.Empty
@@ -286,7 +286,7 @@ type FlacStreamReader =
         let blockSize = BinaryPrimitives.ReadUInt16BigEndian(local)
 
         if blockSize <= 15us then
-            readerEx "Invalid minimum block size"
+            flacEx "Invalid minimum block size"
 
         this._value <- local
         this._consumed <- this._consumed + 2
@@ -297,7 +297,7 @@ type FlacStreamReader =
         let sampleRate = (readUInt32 local) >>> 4 // TODO: DRY
 
         if sampleRate = 0u || sampleRate > FlacConstants.MaxSampleRate then
-            readerEx "Invalid sample rate"
+            flacEx "Invalid sample rate"
 
         // TODO: How to represent this is offset by 4 bits?
         this._value <- local
@@ -321,7 +321,7 @@ type FlacStreamReader =
         let bps = a + b + 1us
 
         if bps < 4us || bps > 32us then
-            readerEx "Invalid bits per sample"
+            flacEx "Invalid bits per sample"
 
         this._value <- local
         // We only fully consume the first byte
@@ -333,17 +333,17 @@ type FlacStreamReader =
 
     member private this.ReadMetadataBlockPadding() =
         match this._blockLength with
-        | ValueNone -> readerEx "Expected a value for BlockLength"
+        | ValueNone -> flacEx "Expected a value for BlockLength"
         | ValueSome length ->
             let l = int length
 
             if l % 8 <> 0 then
-                readerEx "Padding length must be a multiple of 8"
+                flacEx "Padding length must be a multiple of 8"
 
             let local = this._buffer.Slice(this._consumed, l)
 
             if local.IndexOfAnyExcept(0uy) <> -1 then
-                readerEx "Padding contains invalid bytes"
+                flacEx "Padding contains invalid bytes"
 
             this._value <- local
             this._consumed <- this._consumed + l
@@ -351,12 +351,12 @@ type FlacStreamReader =
 
     member private this.ReadApplicationData() =
         match this._blockLength with
-        | ValueNone -> readerEx "Expected a value for BlockLength"
+        | ValueNone -> flacEx "Expected a value for BlockLength"
         | ValueSome length ->
             let l = int length - 4
 
             if l % 8 <> 0 then
-                readerEx "Application data length must be a multiple of 8"
+                flacEx "Application data length must be a multiple of 8"
 
             this._value <- this._buffer.Slice(this._consumed, l)
             this._consumed <- this._consumed + l
@@ -364,8 +364,8 @@ type FlacStreamReader =
 
     member private this.StartSeekTable() =
         match this._blockLength with
-        | ValueNone -> readerEx "Expected a value for BlockLength"
-        | ValueSome length when length % 18u <> 0u -> readerEx "Invalid block length"
+        | ValueNone -> flacEx "Expected a value for BlockLength"
+        | ValueSome length when length % 18u <> 0u -> flacEx "Invalid block length"
         | ValueSome length -> this._seekPointCount <- ValueSome(length / 18u)
 
         this._seekPointOffset <- ValueSome 0u
@@ -375,18 +375,18 @@ type FlacStreamReader =
         this.Read(FlacValue.SeekPointSampleNumber, 8)
 
         match this._seekPointOffset with
-        | ValueNone -> readerEx "Expected a value for SeekPointOffset"
+        | ValueNone -> flacEx "Expected a value for SeekPointOffset"
         | ValueSome i -> this._seekPointOffset <- ValueSome(i + 1u)
 
     member private this.EndSeekPoint() =
         match this._seekPointCount, this._seekPointOffset with
         | ValueSome n, ValueSome i when i < n -> this.StartSeekPoint()
         | ValueSome n, ValueSome i when i = n -> this.EndMetadataBlockData()
-        | _, _ -> readerEx "Expected values for SeekPointCount and SeekPointOffset"
+        | _, _ -> flacEx "Expected values for SeekPointCount and SeekPointOffset"
 
     member private this.ReadVendorString() =
         if this._value.Length < 4 then
-            readerEx "Invalid VendorStringLength"
+            flacEx "Invalid VendorStringLength"
 
         // TODO: DRY
         let length = BinaryPrimitives.ReadUInt32LittleEndian(this._value) |> int
@@ -398,7 +398,7 @@ type FlacStreamReader =
 
     member private this.StartUserCommentList() =
         if this._value.Length < 4 then
-            readerEx "Invalid UserCommentListLength"
+            flacEx "Invalid UserCommentListLength"
 
         let length = BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
@@ -408,7 +408,7 @@ type FlacStreamReader =
 
     member private this.ReadUserComment() =
         if this._value.Length < 4 then
-            readerEx "Invalid UserCommentLength"
+            flacEx "Invalid UserCommentLength"
 
         let length = BinaryPrimitives.ReadUInt32LittleEndian(this._value) |> int
         let local = this._buffer.Slice(this._consumed, length)
@@ -418,14 +418,14 @@ type FlacStreamReader =
         this._consumed <- this._consumed + length
 
         match this._userCommentOffset with
-        | ValueNone -> readerEx "Expected a value for UserCommentOffset"
+        | ValueNone -> flacEx "Expected a value for UserCommentOffset"
         | ValueSome i -> this._userCommentOffset <- ValueSome(i + 1u)
 
     member private this.EndUserComment() =
         match this._userCommentCount, this._userCommentOffset with
         | ValueSome n, ValueSome i when i < n -> this.Read(FlacValue.UserCommentLength, 4)
         | ValueSome n, ValueSome i when i = n -> this.EndMetadataBlockData()
-        | _, _ -> readerEx "Expected values for UserCommentCount and UserCommentOffset"
+        | _, _ -> flacEx "Expected values for UserCommentCount and UserCommentOffset"
 
     // TODO: Validate for CD-DA; offset % 588 = 0
     member private this.ReadCueSheetTrackIndexOffset() =
@@ -445,7 +445,7 @@ type FlacStreamReader =
         let local = this._buffer.Slice(this._consumed, 3)
 
         if local.Slice(1).IndexOfAnyExcept(0uy) <> -1 then
-            readerEx "Reserved block contains invalid bytes"
+            flacEx "Reserved block contains invalid bytes"
 
         this._value <- local
         this._consumed <- this._consumed + 3
@@ -459,7 +459,7 @@ type FlacStreamReader =
 
         // This may be a soft requirement...
         if local = 0uy then
-            readerEx "Invalid cue sheet track number"
+            flacEx "Invalid cue sheet track number"
 
         this._value <- ReadOnlySpan<byte>(&local)
         this._consumed <- this._consumed + 1
@@ -480,7 +480,7 @@ type FlacStreamReader =
 
         // TODO: This doesn't account for the leading 6 bits
         if local.Slice(1).IndexOfAnyExcept(0uy) <> -1 then
-            readerEx "Reserved block contains invalid bytes"
+            flacEx "Reserved block contains invalid bytes"
 
         // TODO: How to represent this is offset by two bits?
         this._value <- local
@@ -506,7 +506,7 @@ type FlacStreamReader =
 
         // TODO: This doesn't account for the leading 7 bits
         if local.Slice(1).IndexOfAnyExcept(0uy) <> -1 then
-            readerEx "Reserved block contains invalid bytes"
+            flacEx "Reserved block contains invalid bytes"
 
         // TODO: How to represent this is offset by one bit?
         this._value <- local
@@ -518,7 +518,7 @@ type FlacStreamReader =
 
         // TODO: Validate for CD-DA num < 100
         if local < 1uy then
-            readerEx "Must have at least one cue sheet track"
+            flacEx "Must have at least one cue sheet track"
 
         this._value <- ReadOnlySpan<byte>(&local)
         this._consumed <- this._consumed + 1
@@ -530,21 +530,21 @@ type FlacStreamReader =
         this.ReadCueSheetTrackOffset()
 
         match this._cueSheetTrackOffset with
-        | ValueNone -> readerEx "Invalid reader state"
+        | ValueNone -> flacEx "Invalid reader state"
         | ValueSome i -> this._cueSheetTrackOffset <- ValueSome(i + 1)
 
     member private this.EndCueSheetTrack() =
         match this._cueSheetTrackCount, this._cueSheetTrackOffset with
         | ValueSome n, ValueSome i when i < n -> this.StartCueSheetTrack()
         | ValueSome n, ValueSome i when i = n -> this.EndMetadataBlockData()
-        | _, _ -> readerEx "Expected values for CueSheetTrackCount and CueSheetTrackOffset"
+        | _, _ -> flacEx "Expected values for CueSheetTrackCount and CueSheetTrackOffset"
 
     member private this.ReadCueSheetNumberOfTrackIndexPoints() =
         let local = this._buffer[this._consumed]
 
         // TODO: Validate for CD-DA num < 100
         if local < 1uy then
-            readerEx "Must have at least one cue sheet track index"
+            flacEx "Must have at least one cue sheet track index"
 
         this._value <- ReadOnlySpan<byte>(&local)
         this._consumed <- this._consumed + 1
@@ -555,18 +555,18 @@ type FlacStreamReader =
         this.ReadCueSheetTrackIndexOffset()
 
         match this._cueSheetTrackIndexOffset with
-        | ValueNone -> readerEx "Expected a value for CueSheetTrackIndexOffset"
+        | ValueNone -> flacEx "Expected a value for CueSheetTrackIndexOffset"
         | ValueSome i -> this._cueSheetTrackIndexOffset <- ValueSome(i + 1)
 
     member private this.EndCueSheetTrackIndexPoint() =
         match this._cueSheetTrackIndexCount, this._cueSheetTrackIndexOffset with
         | ValueSome n, ValueSome i when i < n -> this.StartCueSheetTrackIndexPoint()
         | ValueSome n, ValueSome i when i = n -> this.EndCueSheetTrack()
-        | _, _ -> readerEx "Expected values for CueSheetTrackIndexCount and CueSheetTrackIndexOffset"
+        | _, _ -> flacEx "Expected values for CueSheetTrackIndexCount and CueSheetTrackIndexOffset"
 
     member private this.ReadMimeType() =
         if this._value.Length < 4 then
-            readerEx "Mime type length is too short"
+            flacEx "Mime type length is too short"
 
         let length = BinaryPrimitives.ReadUInt32BigEndian(this._value) |> int
         let local = this._buffer.Slice(this._consumed, length)
@@ -577,7 +577,7 @@ type FlacStreamReader =
 
     member private this.ReadPictureDescription() =
         if this._value.Length < 4 then
-            readerEx "Picture description length is too short"
+            flacEx "Picture description length is too short"
 
         let length = BinaryPrimitives.ReadUInt32BigEndian(this._value) |> int
 
@@ -589,7 +589,7 @@ type FlacStreamReader =
 
     member private this.ReadPictureData() =
         if this._value.Length < 4 then
-            readerEx "Picture data length is too short"
+            flacEx "Picture data length is too short"
 
         let length = BinaryPrimitives.ReadUInt32BigEndian(this._value) |> int
 
@@ -601,7 +601,7 @@ type FlacStreamReader =
 
     member this.GetLastMetadataBlockFlag() =
         if this._valueType <> FlacValue.LastMetadataBlockFlag then
-            readerEx "Expected reader to be positioned at LastMetadataBlockFlag"
+            flacEx "Expected reader to be positioned at LastMetadataBlockFlag"
 
         this._value[0] >>> 7 = 0x1uy
 
@@ -611,7 +611,7 @@ type FlacStreamReader =
 
     member this.GetBlockType() =
         if this._valueType <> FlacValue.MetadataBlockType then
-            readerEx "Expected reader to be positioned at MetadataBlockType"
+            flacEx "Expected reader to be positioned at MetadataBlockType"
 
         let blockType = this._value[0] &&& 0x7Fuy |> int
         enum<BlockType> blockType
@@ -622,7 +622,7 @@ type FlacStreamReader =
 
     member this.GetDataBlockLength() =
         if this._valueType <> FlacValue.DataBlockLength then
-            readerEx "Expected reader to be positioned at DataBlockLength"
+            flacEx "Expected reader to be positioned at DataBlockLength"
 
         readUInt32 this._value
 
@@ -632,7 +632,7 @@ type FlacStreamReader =
 
     member this.GetMinimumBlockSize() =
         if this._valueType <> FlacValue.MinimumBlockSize then
-            readerEx "Expected reader to be positioned at MinimumBlockSize"
+            flacEx "Expected reader to be positioned at MinimumBlockSize"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
 
@@ -642,7 +642,7 @@ type FlacStreamReader =
 
     member this.GetMaximumBlockSize() =
         if this._valueType <> FlacValue.MaximumBlockSize then
-            readerEx "Expected reader to be positioned at MaximumBlockSize"
+            flacEx "Expected reader to be positioned at MaximumBlockSize"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
 
@@ -652,7 +652,7 @@ type FlacStreamReader =
 
     member this.GetMinimumFrameSize() =
         if this._valueType <> FlacValue.MinimumFrameSize then
-            readerEx "Expected reader to be positioned at MinimumFrameSize"
+            flacEx "Expected reader to be positioned at MinimumFrameSize"
 
         readUInt32 this._value
 
@@ -662,7 +662,7 @@ type FlacStreamReader =
 
     member this.GetMaximumFrameSize() =
         if this._valueType <> FlacValue.MaximumFrameSize then
-            readerEx "Expected reader to be positioned at MaximumFrameSize"
+            flacEx "Expected reader to be positioned at MaximumFrameSize"
 
         readUInt32 this._value
 
@@ -672,7 +672,7 @@ type FlacStreamReader =
 
     member this.GetSampleRate() =
         if this._valueType <> FlacValue.StreamInfoSampleRate then
-            readerEx "Expected reader to be positioned at StreamInfoSampleRate"
+            flacEx "Expected reader to be positioned at StreamInfoSampleRate"
 
         readUInt32 this._value >>> 4
 
@@ -682,7 +682,7 @@ type FlacStreamReader =
 
     member this.GetChannels() =
         if this._valueType <> FlacValue.NumberOfChannels then
-            readerEx "Expected reader to be positioned at NumberOfChannels"
+            flacEx "Expected reader to be positioned at NumberOfChannels"
 
         uint16 (this._value[0] &&& 0x0Euy >>> 1) + 1us
 
@@ -692,7 +692,7 @@ type FlacStreamReader =
 
     member this.GetBitsPerSample() =
         if this._valueType <> FlacValue.BitsPerSample then
-            readerEx "Expected reader to be positioned at BitsPerSample"
+            flacEx "Expected reader to be positioned at BitsPerSample"
 
         let a = uint16 (this._value[0] &&& 0x01uy) <<< 13
         let b = uint16 (this._value[1]) >>> 4
@@ -704,7 +704,7 @@ type FlacStreamReader =
 
     member this.GetTotalSamples() =
         if this._valueType <> FlacValue.TotalSamples then
-            readerEx "Expected reader to be positioned at TotalSamples"
+            flacEx "Expected reader to be positioned at TotalSamples"
 
         let a = uint64 (this._value[0] &&& 0x0Fuy) <<< 8 * 4
         let b = uint64 this._value[1] <<< 8 * 3
@@ -719,7 +719,7 @@ type FlacStreamReader =
 
     member this.GetMd5Signature() =
         if this._valueType <> FlacValue.Md5Signature then
-            readerEx "Expected reader to be positioned at Md5Signature"
+            flacEx "Expected reader to be positioned at Md5Signature"
 
         Convert.ToHexString(this._value)
 
@@ -729,7 +729,7 @@ type FlacStreamReader =
 
     member this.GetSeekPointSampleNumber() =
         if this._valueType <> FlacValue.SeekPointSampleNumber then
-            readerEx "Expected reader to be positioned at SeekPointSampleNumber"
+            flacEx "Expected reader to be positioned at SeekPointSampleNumber"
 
         BinaryPrimitives.ReadUInt64BigEndian(this._value)
 
@@ -739,7 +739,7 @@ type FlacStreamReader =
 
     member this.GetSeekPointOffset() =
         if this._valueType <> FlacValue.SeekPointOffset then
-            readerEx "Expected reader to be positioned at SeekPointOffset"
+            flacEx "Expected reader to be positioned at SeekPointOffset"
 
         BinaryPrimitives.ReadUInt64BigEndian(this._value)
 
@@ -749,7 +749,7 @@ type FlacStreamReader =
 
     member this.GetSeekPointNumberOfSamples() =
         if this._valueType <> FlacValue.NumberOfSamples then
-            readerEx "Expected reader to be positioned at NumberOfSamples"
+            flacEx "Expected reader to be positioned at NumberOfSamples"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
 
@@ -759,7 +759,7 @@ type FlacStreamReader =
 
     member this.GetVendorLength() =
         if this._valueType <> FlacValue.VendorLength then
-            readerEx "Expected reader to be positioned at VendorLength"
+            flacEx "Expected reader to be positioned at VendorLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
@@ -769,7 +769,7 @@ type FlacStreamReader =
 
     member this.GetVendorString() =
         if this._valueType <> FlacValue.VendorString then
-            readerEx "Expected reader to be positioned at VendorString"
+            flacEx "Expected reader to be positioned at VendorString"
 
         Encoding.UTF8.GetString(this._value)
 
@@ -779,7 +779,7 @@ type FlacStreamReader =
 
     member this.GetUserCommentListLength() =
         if this._valueType <> FlacValue.UserCommentListLength then
-            readerEx "Expected reader to be positioned at UserCommentListLength"
+            flacEx "Expected reader to be positioned at UserCommentListLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
@@ -789,7 +789,7 @@ type FlacStreamReader =
 
     member this.GetUserCommentLength() =
         if this._valueType <> FlacValue.UserCommentLength then
-            readerEx "Expected reader to be positioned at UserCommentLength"
+            flacEx "Expected reader to be positioned at UserCommentLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
@@ -799,7 +799,7 @@ type FlacStreamReader =
 
     member this.GetUserComment() =
         if this._valueType <> FlacValue.UserComment then
-            readerEx "Expected reader to be positioned at UserComment"
+            flacEx "Expected reader to be positioned at UserComment"
 
         Encoding.UTF8.GetString(this._value)
 
@@ -809,7 +809,7 @@ type FlacStreamReader =
 
     member this.GetPictureType() =
         if this._valueType <> FlacValue.PictureType then
-            readerEx "Expected reader to be positioned at PictureType"
+            flacEx "Expected reader to be positioned at PictureType"
 
         let pictureType = BinaryPrimitives.ReadUInt32BigEndian(this._value)
         enum<PictureType> (int pictureType)
@@ -820,7 +820,7 @@ type FlacStreamReader =
 
     member this.GetMimeTypeLength() =
         if this._valueType <> FlacValue.MimeTypeLength then
-            readerEx "Expected reader to be positioned at MimeTypeLength"
+            flacEx "Expected reader to be positioned at MimeTypeLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
@@ -830,7 +830,7 @@ type FlacStreamReader =
 
     member this.GetMimeType() =
         if this._valueType <> FlacValue.MimeType then
-            readerEx "Expected reader to be positioned at MimeType"
+            flacEx "Expected reader to be positioned at MimeType"
 
         Encoding.UTF8.GetString(this._value)
 
@@ -840,7 +840,7 @@ type FlacStreamReader =
 
     member this.GetPictureDescriptionLength() =
         if this._valueType <> FlacValue.PictureDescriptionLength then
-            readerEx "Expected reader to be positioned at PictureDescriptionLength"
+            flacEx "Expected reader to be positioned at PictureDescriptionLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
@@ -850,7 +850,7 @@ type FlacStreamReader =
 
     member this.GetPictureDescription() =
         if this._valueType <> FlacValue.PictureDescription then
-            readerEx "Expected reader to be positioned at PictureDescription"
+            flacEx "Expected reader to be positioned at PictureDescription"
 
         Encoding.UTF8.GetString(this._value)
 
@@ -860,7 +860,7 @@ type FlacStreamReader =
 
     member this.GetPictureWidth() =
         if this._valueType <> FlacValue.PictureWidth then
-            readerEx "Expected reader to be positioned at PictureWidth"
+            flacEx "Expected reader to be positioned at PictureWidth"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
@@ -870,7 +870,7 @@ type FlacStreamReader =
 
     member this.GetPictureHeight() =
         if this._valueType <> FlacValue.PictureHeight then
-            readerEx "Expected reader to be positioned at PictureHeight"
+            flacEx "Expected reader to be positioned at PictureHeight"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
@@ -880,7 +880,7 @@ type FlacStreamReader =
 
     member this.GetPictureColorDepth() =
         if this._valueType <> FlacValue.PictureColorDepth then
-            readerEx "Expected reader to be positioned at PictureColorDepth"
+            flacEx "Expected reader to be positioned at PictureColorDepth"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
@@ -890,7 +890,7 @@ type FlacStreamReader =
 
     member this.GetPictureNumberOfColors() =
         if this._valueType <> FlacValue.PictureNumberOfColors then
-            readerEx "Expected reader to be positioned at PictureNumberOfColors"
+            flacEx "Expected reader to be positioned at PictureNumberOfColors"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
@@ -900,7 +900,7 @@ type FlacStreamReader =
 
     member this.GetPictureDataLength() =
         if this._valueType <> FlacValue.PictureDataLength then
-            readerEx "Expected reader to be positioned at PictureDataLength"
+            flacEx "Expected reader to be positioned at PictureDataLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
@@ -910,7 +910,7 @@ type FlacStreamReader =
 
     member this.GetPictureData() =
         if this._valueType <> FlacValue.PictureData then
-            readerEx "Expected reader to be positioned at PictureData"
+            flacEx "Expected reader to be positioned at PictureData"
 
         this._value
 
