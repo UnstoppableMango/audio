@@ -37,11 +37,11 @@ type FlacStreamState =
 
     static member After(position: FlacValue) =
         match position with // TODO: Throw on positions that require more state
-        | FlacValue.DataBlockLength -> readerEx "More state is required. Use FlacStreamState.AfterBlockHeader"
+        | FlacValue.DataBlockLength -> flacEx "More state is required. Use FlacStreamState.AfterBlockHeader"
         | FlacValue.Md5Signature
         | FlacValue.NumberOfSamples
         | FlacValue.UserComment
-        | FlacValue.PictureData -> readerEx "More state is required. Use FlacStreamState.AfterBlockData"
+        | FlacValue.PictureData -> flacEx "More state is required. Use FlacStreamState.AfterBlockData"
         | _ -> { FlacStreamState.Empty with Value = position }
 
     static member AfterBlockHeader(lastBlock: bool, length: uint32, blockType: BlockType, state: FlacStreamState) =
