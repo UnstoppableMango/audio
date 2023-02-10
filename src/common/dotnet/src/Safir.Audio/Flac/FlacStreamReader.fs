@@ -236,6 +236,7 @@ type FlacStreamReader =
         let temp = this._buffer[this._consumed]
         let local = temp &&& 0x7Fuy // TODO: DRY
 
+        // Impossible, but technically correct
         if local > 127uy then flacEx "Invalid metadata block type"
 
         this._value <- this._buffer.Slice(this._consumed, 1)
