@@ -3,7 +3,7 @@ module Safir.Audio.Flac.FlacConstants
 // https://xiph.org/flac/format.html#METADATA_BLOCK_STREAMINFO
 
 [<Literal>]
-let MinBlockSize = 15
+let MinBlockSize = 15us
 
 [<Literal>]
 let MaxBlockSize = 65535
