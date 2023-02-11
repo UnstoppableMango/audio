@@ -338,9 +338,6 @@ type FlacStreamReader =
         | ValueSome length ->
             let l = int length
 
-            if l % 8 <> 0 then
-                flacEx "Padding length must be a multiple of 8"
-
             let local = this._buffer.Slice(this._consumed, l)
 
             if local.IndexOfAnyExcept(0uy) <> -1 then
@@ -355,10 +352,6 @@ type FlacStreamReader =
         | ValueNone -> flacEx "Expected a value for BlockLength"
         | ValueSome length ->
             let l = int length - 4
-
-            if l % 8 <> 0 then
-                flacEx "Application data length must be a multiple of 8"
-
             this._value <- this._buffer.Slice(this._consumed, l)
             this._consumed <- this._consumed + l
             this._valueType <- FlacValue.ApplicationData
@@ -459,8 +452,7 @@ type FlacStreamReader =
         let local = this._buffer[this._consumed]
 
         // This may be a soft requirement...
-        if local = 0uy then
-            flacEx "Invalid cue sheet track number"
+        if local = 0uy then flacEx "Invalid cue sheet track number"
 
         this._value <- ReadOnlySpan<byte>(&local)
         this._consumed <- this._consumed + 1
