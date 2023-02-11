@@ -8,6 +8,11 @@ open Xunit
 let expectLengthThreeCases: obj array seq =
     [ [| [| 0x00uy; 0x00uy |] |]; [| [| 0x00uy |] |] ]
 
+let expectLengthFourCases: obj array seq =
+    [ [| [| 0x00uy; 0x00uy; 0x00uy |] |]
+      [| [| 0x00uy; 0x00uy |] |]
+      [| [| 0x00uy |] |] ]
+
 [<Fact>]
 let ``Returns false when there is no more data to read`` () =
     let mutable reader = FlacStreamReader()
@@ -367,6 +372,219 @@ let ``Reads to end when at MD5 signature and last block`` () =
     let state =
         { FlacStreamState.Empty with
             Value = FlacValue.Md5Signature
+            LastMetadataBlock = ValueSome true }
+
+    let mutable reader = FlacStreamReader([| 0x69uy |], state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.None, reader.ValueType)
+    Assert.Equal(0, reader.Value.Length)
+
+let paddingCases: obj array seq =
+    [ [| [| 0x00uy |]; 1u |]; [| Array.zeroCreate<byte> 69; 69u |] ]
+
+[<Theory>]
+[<MemberData(nameof paddingCases)>]
+let ``Reads padding`` (data: byte array) (length: uint) =
+    let state =
+        { FlacStreamState.Empty with
+            BlockType = ValueSome BlockType.Padding
+            BlockLength = ValueSome length
+            Value = FlacValue.DataBlockLength }
+
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.Padding, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Fact>]
+let ``Throws when reading padding and no block length`` () =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockType = ValueSome BlockType.Padding
+                Value = FlacValue.DataBlockLength }
+
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+let invalidBufferPaddingCases: obj array seq =
+    [ [| [| 0x00uy |]; 2u |]
+      [| Array.zeroCreate<byte> 69; 70u |]
+      [| [| 0x00uy |]; 69u |] ]
+
+[<Theory>]
+[<MemberData(nameof invalidBufferPaddingCases)>]
+let ``Throws when buffer is too small for padding`` (data: byte array) (length: uint) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockType = ValueSome BlockType.Padding
+                BlockLength = ValueSome length
+                Value = FlacValue.DataBlockLength }
+
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let invalidPaddingCases: obj array seq =
+    [ [| [| 0x0Fuy |]; 1u |]
+      [| [| 0xFuy |]; 1u |]
+      [| [| 0xF0uy; 0x00uy |]; 2u |]
+      [| [| 0x00uy; 0xF0uy |]; 2u |] ]
+
+[<Theory>]
+[<MemberData(nameof invalidPaddingCases)>]
+let ``Throws when padding is invalid`` (data: byte array) (length: uint) =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockType = ValueSome BlockType.Padding
+                BlockLength = ValueSome length
+                Value = FlacValue.DataBlockLength }
+
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+[<Fact>]
+let ``Throws when at padding and unknown last metadata block`` () =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.Padding }
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<InlineData(0x80uy)>]
+[<InlineData(0x00uy)>]
+let ``Reads last metadata block flag when at padding and not last block`` (data: byte) =
+    let state =
+        { FlacStreamState.Empty with
+            Value = FlacValue.Padding
+            LastMetadataBlock = ValueSome false }
+
+    let mutable reader =
+        FlacStreamReader(ReadOnlySpan<byte>.op_Implicit [| data |], state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.LastMetadataBlockFlag, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual([| data |]))
+
+[<Fact>]
+let ``Reads to end when at padding and last block`` () =
+    let state =
+        { FlacStreamState.Empty with
+            Value = FlacValue.Padding
+            LastMetadataBlock = ValueSome true }
+
+    let mutable reader = FlacStreamReader([| 0x69uy |], state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.None, reader.ValueType)
+    Assert.Equal(0, reader.Value.Length)
+
+let applicationIdCases: obj array seq =
+    [ [| [| 0x00uy; 0x10uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory>]
+[<MemberData(nameof applicationIdCases)>]
+let ``Reads application id`` (data: byte array) =
+    let state =
+        { FlacStreamState.Empty with
+            BlockType = ValueSome BlockType.Application
+            Value = FlacValue.DataBlockLength }
+
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.ApplicationId, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthFourCases)>]
+let ``Throws when buffer is too small for applicationId`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockType = ValueSome BlockType.Application
+                Value = FlacValue.DataBlockLength }
+
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let applicationDataCases: obj array seq =
+    [ [| [| 0x00uy |]; 5u |]; [| Array.zeroCreate<byte> 69; 73u |] ]
+
+[<Theory>]
+[<MemberData(nameof applicationDataCases)>]
+let ``Reads application data`` (data: byte array) (length: uint) =
+    let state =
+        { FlacStreamState.Empty with
+            BlockLength = ValueSome length
+            Value = FlacValue.ApplicationId }
+
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.ApplicationData, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Fact>]
+let ``Throws when reading application data and no block length`` () =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Value = FlacValue.ApplicationId }
+
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+let invalidBufferApplicationDataCases: obj array seq =
+    [ [| [| 0x00uy |]; 6u |]
+      [| Array.zeroCreate<byte> 69; 74u |]
+      [| [| 0x00uy |]; 69u |] ]
+
+[<Theory>]
+[<MemberData(nameof invalidBufferApplicationDataCases)>]
+let ``Throws when buffer is too small for application data`` (data: byte array) (length: uint) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockLength = ValueSome length
+                Value = FlacValue.ApplicationId }
+
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+[<Fact>]
+let ``Throws when at application data and unknown last metadata block`` () =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.ApplicationData }
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<InlineData(0x80uy)>]
+[<InlineData(0x00uy)>]
+let ``Reads last metadata block flag when at application data and not last block`` (data: byte) =
+    let state =
+        { FlacStreamState.Empty with
+            Value = FlacValue.ApplicationData
+            LastMetadataBlock = ValueSome false }
+
+    let mutable reader =
+        FlacStreamReader(ReadOnlySpan<byte>.op_Implicit [| data |], state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.LastMetadataBlockFlag, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual([| data |]))
+
+[<Fact>]
+let ``Reads to end when at application data and last block`` () =
+    let state =
+        { FlacStreamState.Empty with
+            Value = FlacValue.ApplicationData
             LastMetadataBlock = ValueSome true }
 
     let mutable reader = FlacStreamReader([| 0x69uy |], state)
