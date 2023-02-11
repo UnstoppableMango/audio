@@ -13,11 +13,11 @@ let readMagic (reader: byref<FlacStreamReader>) =
         flacEx "Invalid Flac stream"
 
 let readMetadataBlockHeader (reader: byref<FlacStreamReader>) =
-    reader.ReadAsLastMetadataBlockFlag() |> ignore
-    let blockType = reader.ReadAsBlockType()
-    reader.ReadAsDataBlockLength() |> ignore
+    reader.SkipTo(FlacValue.LastMetadataBlockFlag)
 
-    { BlockType = blockType }
+    { LastBlock = reader.ReadAsLastMetadataBlockFlag()
+      BlockType = reader.ReadAsBlockType()
+      Length = reader.ReadAsDataBlockLength() }
 
 let readMetadataBlockStreamInfo (reader: byref<FlacStreamReader>) =
     { MinBlockSize = int <| reader.ReadAsMinimumBlockSize()

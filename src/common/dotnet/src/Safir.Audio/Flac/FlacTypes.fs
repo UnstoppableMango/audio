@@ -70,7 +70,10 @@ type BlockType =
     | Picture = 6
     | Invalid = 127
 
-type MetadataBlockHeader = { BlockType: BlockType }
+type MetadataBlockHeader =
+    { LastBlock: bool
+      BlockType: BlockType
+      Length: uint }
 
 type MetadataBlockStreamInfo =
     { MinBlockSize: int
