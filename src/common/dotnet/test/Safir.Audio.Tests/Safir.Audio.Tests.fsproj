@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Flac\FlacStreamReaderTests.fs" />
     <Compile Include="Flac\FlacStreamReader.ReadTests.fs" />
     <Compile Include="Flac\FlacStreamReader.NextValueTests.fs" />
     <Compile Include="Program.fs" />
