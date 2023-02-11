@@ -168,7 +168,7 @@ type FlacStreamReader =
             | FlacValue.SeekPointOffset -> this.Read(FlacValue.NumberOfSamples, 2)
             | FlacValue.NumberOfSamples -> this.EndSeekPoint()
             | FlacValue.VendorLength -> this.ReadVendorString()
-            | FlacValue.VendorString -> this.Read(FlacValue.UserCommentListLength, 4)
+            | FlacValue.VendorString -> this.ReadUserCommentListLength()
             | FlacValue.UserCommentListLength -> this.StartUserCommentList()
             | FlacValue.UserCommentLength -> this.ReadUserComment()
             | FlacValue.UserComment -> this.EndUserComment()
@@ -391,15 +391,19 @@ type FlacStreamReader =
         this._valueType <- FlacValue.VendorString
         this._consumed <- this._consumed + length
 
-    member private this.StartUserCommentList() =
+    member private this.ReadUserCommentListLength() =
+        this.Read(FlacValue.UserCommentListLength, 4)
+
         if this._value.Length < 4 then
             flacEx "Invalid UserCommentListLength"
 
         let length = BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
         this._userCommentCount <- ValueSome length
-        this._userCommentOffset <- ValueSome 0u
+
+    member private this.StartUserCommentList() =
         this.Read(FlacValue.UserCommentLength, 4)
+        this._userCommentOffset <- ValueSome 0u
 
     member private this.ReadUserComment() =
         if this._value.Length < 4 then

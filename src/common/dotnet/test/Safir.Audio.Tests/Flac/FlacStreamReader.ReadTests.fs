@@ -792,3 +792,221 @@ let ``Reads to end when at number of samples, count equals offset, and last bloc
     Assert.True(reader.Read())
     Assert.Equal(FlacValue.None, reader.ValueType)
     Assert.Equal(0, reader.Value.Length)
+
+let vendorLengthCases: obj array seq =
+    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory>]
+[<MemberData(nameof vendorLengthCases)>]
+let ``Reads vendor length`` (data: byte array) =
+    let state =
+        { FlacStreamState.Empty with
+            BlockType = ValueSome BlockType.VorbisComment
+            Value = FlacValue.DataBlockLength }
+
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.VendorLength, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for vendor length`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockType = ValueSome BlockType.VorbisComment
+                Value = FlacValue.DataBlockLength }
+
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let vendorStringCases: obj array seq =
+    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory(Skip = "We currently can't start in the middle of the vendor string")>]
+[<MemberData(nameof vendorStringCases)>]
+let ``Reads vendor string`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.VendorLength }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.VendorString, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory(Skip = "We currently can't start in the middle of the vendor string")>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for vendor string`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.VendorLength }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let userCommentListLengthCases: obj array seq =
+    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory>]
+[<MemberData(nameof userCommentListLengthCases)>]
+let ``Reads user comment list length`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.VendorString }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.UserCommentListLength, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for user comment list length`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.VendorString }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let userCommentLengthCases: obj array seq =
+    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory>]
+[<MemberData(nameof userCommentLengthCases)>]
+let ``Reads user comment length`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.UserCommentListLength }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.UserCommentLength, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for user comment length`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.UserCommentListLength }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let userCommentCases: obj array seq =
+    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory(Skip = "We currently can't start in the middle of a user comment")>]
+[<MemberData(nameof userCommentCases)>]
+let ``Reads user comment`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.UserCommentLength }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.UserComment, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory(Skip = "We currently can't start in the middle of a user comment")>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for user comment`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.UserCommentLength }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<MemberData(nameof userCommentLengthCases)>]
+let ``Reads user comment length when at user comment and offset is less than count`` (data: byte array) =
+    let state =
+        { FlacStreamState.Empty with
+            Value = FlacValue.UserComment
+            UserCommentCount = ValueSome 2u
+            UserCommentOffset = ValueSome 1u }
+
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.UserCommentLength, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when at user comment and buffer is too small for user comment length`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Value = FlacValue.UserComment
+                UserCommentCount = ValueSome 2u
+                UserCommentOffset = ValueSome 1u }
+
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let userCommentInvalidStateCases: obj array seq =
+    seq {
+        [| ValueNone; ValueNone |]
+        [| ValueSome 69u; ValueNone |]
+        [| ValueNone; ValueSome 69u |]
+        [| ValueSome 69u; ValueSome 420u |]
+    }
+    |> Seq.map (Array.map box)
+
+[<Theory>]
+[<MemberData(nameof userCommentInvalidStateCases)>]
+let ``Throws when at user comment and state is invalid`` (count: uint voption) (offset: uint voption) =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Value = FlacValue.UserComment
+                UserCommentCount = count
+                UserCommentOffset = offset }
+
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+[<Fact>]
+let ``Throws when at user comment, count equals offset, and unknown last metadata block`` () =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Value = FlacValue.UserComment
+                UserCommentCount = ValueSome 69u
+                UserCommentOffset = ValueSome 69u }
+
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<InlineData(0x80uy)>]
+[<InlineData(0x00uy)>]
+let ``Reads last metadata block flag when at user comment, count equals offset, and not last block`` (data: byte) =
+    let state =
+        { FlacStreamState.Empty with
+            Value = FlacValue.UserComment
+            UserCommentCount = ValueSome 69u
+            UserCommentOffset = ValueSome 69u
+            LastMetadataBlock = ValueSome false }
+
+    let mutable reader =
+        FlacStreamReader(ReadOnlySpan<byte>.op_Implicit [| data |], state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.LastMetadataBlockFlag, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual([| data |]))
+
+[<Fact>]
+let ``Reads to end when at user comment, count equals offset, and last block`` () =
+    let state =
+        { FlacStreamState.Empty with
+            Value = FlacValue.UserComment
+            UserCommentCount = ValueSome 69u
+            UserCommentOffset = ValueSome 69u
+            LastMetadataBlock = ValueSome true }
+
+    let mutable reader = FlacStreamReader([| 0x69uy |], state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.None, reader.ValueType)
+    Assert.Equal(0, reader.Value.Length)
