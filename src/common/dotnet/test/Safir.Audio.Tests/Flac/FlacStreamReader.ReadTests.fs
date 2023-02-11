@@ -16,6 +16,11 @@ let expectLengthFourCases: obj array seq =
       [| [| 0x00uy; 0x00uy |] |]
       [| [| 0x00uy |] |] ]
 
+let expectGenericBytesCases count : obj array seq =
+    [ [| Array.create count 0x00uy |]
+      [| Array.create count 0xFFuy |]
+      [| Array.create count 0x69uy |] ]
+
 [<Fact>]
 let ``Returns false when there is no more data to read`` () =
     let mutable reader = FlacStreamReader()
@@ -1010,3 +1015,240 @@ let ``Reads to end when at user comment, count equals offset, and last block`` (
     Assert.True(reader.Read())
     Assert.Equal(FlacValue.None, reader.ValueType)
     Assert.Equal(0, reader.Value.Length)
+
+// TODO: Cue sheet tests
+
+let pictureTypeCases: obj array seq =
+    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory>]
+[<MemberData(nameof pictureTypeCases)>]
+let ``Reads picture type`` (data: byte array) =
+    let state =
+        { FlacStreamState.Empty with
+            BlockType = ValueSome BlockType.Picture
+            Value = FlacValue.DataBlockLength }
+
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.PictureType, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for picture type`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockType = ValueSome BlockType.Picture
+                Value = FlacValue.DataBlockLength }
+
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let mimeTypeLengthCases: obj array seq =
+    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory>]
+[<MemberData(nameof mimeTypeLengthCases)>]
+let ``Reads mime type length`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.PictureType }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.MimeTypeLength, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for mime type length`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.PictureType }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let mimeTypeCases: obj array seq =
+    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory(Skip = "We currently can't start in the middle of the mime type")>]
+[<MemberData(nameof mimeTypeCases)>]
+let ``Reads mime type`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.MimeTypeLength }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.MimeType, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory(Skip = "We currently can't start in the middle of the mime type")>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for mime type`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.MimeTypeLength }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let pictureDescriptionLengthCases: obj array seq =
+    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory>]
+[<MemberData(nameof pictureDescriptionLengthCases)>]
+let ``Reads picture description length`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.MimeType }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.PictureDescriptionLength, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for picture description length`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.MimeType }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let pictureDescriptionCases: obj array seq =
+    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory(Skip = "We currently can't start in the middle of the picture description")>]
+[<MemberData(nameof pictureDescriptionCases)>]
+let ``Reads picture description`` (data: byte array) =
+    let state =
+        { FlacStreamState.Empty with Value = FlacValue.PictureDescriptionLength }
+
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.PictureDescription, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory(Skip = "We currently can't start in the middle of the picture description")>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for picture description`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with Value = FlacValue.PictureDescriptionLength }
+
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
+let ``Reads picture width`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.PictureDescription }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.PictureWidth, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for picture width`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.PictureDescription }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
+let ``Reads picture height`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.PictureWidth }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.PictureHeight, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for picture height`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.PictureWidth }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
+let ``Reads picture color depth`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.PictureHeight }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.PictureColorDepth, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for picture color depth`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.PictureHeight }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
+let ``Reads picture number of colors`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.PictureColorDepth }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.PictureNumberOfColors, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for picture number of colors`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.PictureColorDepth }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
+let ``Reads picture data length`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.PictureNumberOfColors }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.PictureDataLength, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for picture data length`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.PictureNumberOfColors }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+[<Theory(Skip = "We currently can't start in the middle of the picture data")>]
+[<MemberData(nameof expectGenericBytesCases, 69)>]
+let ``Reads picture data`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.PictureDataLength }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.PictureData, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory(Skip = "We currently can't start in the middle of the picture data")>]
+[<MemberData(nameof expectLengthCases, 4)>]
+let ``Throws when buffer is too small for picture data`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.PictureDataLength }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
