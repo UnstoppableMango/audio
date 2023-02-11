@@ -376,6 +376,7 @@ type FlacStreamReader =
         match this._seekPointCount, this._seekPointOffset with
         | ValueSome n, ValueSome i when i < n -> this.StartSeekPoint()
         | ValueSome n, ValueSome i when i = n -> this.EndMetadataBlockData()
+        // TODO: We can always get the count if we have the block length
         | _, _ -> flacEx "Expected values for SeekPointCount and SeekPointOffset"
 
     member private this.ReadVendorString() =

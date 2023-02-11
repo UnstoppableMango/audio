@@ -5,6 +5,9 @@ open System
 open Safir.Audio.Flac
 open Xunit
 
+let expectLengthCases count : obj array seq =
+    seq { for i in 1 .. (count - 1) -> [| Array.zeroCreate<byte> i |] }
+
 let expectLengthThreeCases: obj array seq =
     [ [| [| 0x00uy; 0x00uy |] |]; [| [| 0x00uy |] |] ]
 
@@ -533,10 +536,7 @@ let ``Reads application data`` (data: byte array) (length: uint) =
 [<Fact>]
 let ``Throws when reading application data and no block length`` () =
     Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state =
-            { FlacStreamState.Empty with
-                Value = FlacValue.ApplicationId }
-
+        let state = { FlacStreamState.Empty with Value = FlacValue.ApplicationId }
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
 
@@ -585,6 +585,206 @@ let ``Reads to end when at application data and last block`` () =
     let state =
         { FlacStreamState.Empty with
             Value = FlacValue.ApplicationData
+            LastMetadataBlock = ValueSome true }
+
+    let mutable reader = FlacStreamReader([| 0x69uy |], state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.None, reader.ValueType)
+    Assert.Equal(0, reader.Value.Length)
+
+let seekPointSampleNumberCases: obj array seq =
+    [ [| [| 0x00uy; 0x10uy; 0x00uy; 0x00uy; 0x00uy; 0x10uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory>]
+[<MemberData(nameof seekPointSampleNumberCases)>]
+let ``Reads seek point sample number`` (data: byte array) =
+    let state =
+        { FlacStreamState.Empty with
+            BlockType = ValueSome BlockType.SeekTable
+            BlockLength = ValueSome 18u
+            Value = FlacValue.DataBlockLength }
+
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.SeekPointSampleNumber, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 8)>]
+let ``Throws when buffer is too small for seek point sample number`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockType = ValueSome BlockType.SeekTable
+                BlockLength = ValueSome 18u
+                Value = FlacValue.DataBlockLength }
+
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+[<Fact>]
+let ``Throws when reading seek point sample number and no block length`` () =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockType = ValueSome BlockType.SeekTable
+                Value = FlacValue.DataBlockLength }
+
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<InlineData(1)>]
+[<InlineData(17)>]
+[<InlineData(69)>]
+let ``Throws when reading seek point sample number and invalid block length`` (length: uint) =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockType = ValueSome BlockType.SeekTable
+                BlockLength = ValueSome length
+                Value = FlacValue.DataBlockLength }
+
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+let seekPointOffsetCases: obj array seq =
+    [ [| [| 0x00uy; 0x10uy; 0x00uy; 0x00uy; 0x00uy; 0x10uy; 0x00uy; 0x00uy |] |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
+
+[<Theory>]
+[<MemberData(nameof seekPointOffsetCases)>]
+let ``Reads seek point offset`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.SeekPointSampleNumber }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.SeekPointOffset, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 8)>]
+let ``Throws when buffer is too small for seek point offset`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.SeekPointSampleNumber }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let numberOfSamplesCases: obj array seq =
+    [ [| [| 0x00uy; 0x10uy |] |]
+      [| [| 0xFFuy; 0xFFuy |] |]
+      [| [| 0x69uy; 0x69uy |] |] ]
+
+[<Theory>]
+[<MemberData(nameof numberOfSamplesCases)>]
+let ``Reads number of samples`` (data: byte array) =
+    let state = { FlacStreamState.Empty with Value = FlacValue.SeekPointOffset }
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.NumberOfSamples, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 2)>]
+let ``Throws when buffer is too small for number of samples`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.SeekPointOffset }
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<MemberData(nameof seekPointSampleNumberCases)>]
+let ``Reads seek point sample number when at number of samples and offset is less than count`` (data: byte array) =
+    let state =
+        { FlacStreamState.Empty with
+            Value = FlacValue.NumberOfSamples
+            SeekPointCount = ValueSome 2u
+            SeekPointOffset = ValueSome 1u }
+
+    let mutable reader = FlacStreamReader(data, state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.SeekPointSampleNumber, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual(data))
+
+[<Theory>]
+[<MemberData(nameof expectLengthCases, 8)>]
+let ``Throws when at number of samples and buffer is too small for seek point sample number`` (data: byte array) =
+    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Value = FlacValue.NumberOfSamples
+                SeekPointCount = ValueSome 2u
+                SeekPointOffset = ValueSome 1u }
+
+        let mutable reader = FlacStreamReader(data, state)
+        reader.Read() |> ignore)
+
+let numberOfSamplesInvalidStateCases: obj array seq =
+    seq {
+        [| ValueNone; ValueNone |]
+        [| ValueSome 69u; ValueNone |]
+        [| ValueNone; ValueSome 69u |]
+        [| ValueSome 69u; ValueSome 420u |]
+    }
+    |> Seq.map (Array.map box)
+
+[<Theory>]
+[<MemberData(nameof numberOfSamplesInvalidStateCases)>]
+let ``Throws when at number of samples and state is invalid`` (count: uint voption) (offset: uint voption) =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Value = FlacValue.NumberOfSamples
+                SeekPointCount = count
+                SeekPointOffset = offset }
+
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+[<Fact>]
+let ``Throws when at number of samples, count equals offset, and unknown last metadata block`` () =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Value = FlacValue.NumberOfSamples
+                SeekPointCount = ValueSome 69u
+                SeekPointOffset = ValueSome 69u }
+
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<InlineData(0x80uy)>]
+[<InlineData(0x00uy)>]
+let ``Reads last metadata block flag when at number of samples, count equals offset, and not last block`` (data: byte) =
+    let state =
+        { FlacStreamState.Empty with
+            Value = FlacValue.NumberOfSamples
+            SeekPointCount = ValueSome 69u
+            SeekPointOffset = ValueSome 69u
+            LastMetadataBlock = ValueSome false }
+
+    let mutable reader =
+        FlacStreamReader(ReadOnlySpan<byte>.op_Implicit [| data |], state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.LastMetadataBlockFlag, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual([| data |]))
+
+[<Fact>]
+let ``Reads to end when at number of samples, count equals offset, and last block`` () =
+    let state =
+        { FlacStreamState.Empty with
+            Value = FlacValue.NumberOfSamples
+            SeekPointCount = ValueSome 69u
+            SeekPointOffset = ValueSome 69u
             LastMetadataBlock = ValueSome true }
 
     let mutable reader = FlacStreamReader([| 0x69uy |], state)
