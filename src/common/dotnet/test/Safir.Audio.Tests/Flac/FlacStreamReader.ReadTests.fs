@@ -1147,3 +1147,54 @@ let ``Throws when buffer is too small for picture data`` (data: byte array) =
         let state = { FlacStreamState.Empty with Value = FlacValue.PictureDataLength }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
+
+[<Theory>]
+[<InlineData(127)>]
+[<InlineData(420)>]
+let ``Throws when block type is invalid`` blockType =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockType = ValueSome(enum<BlockType> blockType)
+                Value = FlacValue.DataBlockLength }
+
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+[<Theory>]
+[<InlineData(7)>]
+[<InlineData(69)>]
+[<InlineData(126)>]
+let ``Reads metadata block data when block type is unrecognized`` blockType =
+    let state =
+        { FlacStreamState.Empty with
+            BlockType = ValueSome(enum<BlockType> blockType)
+            BlockLength = ValueSome 1u
+            Value = FlacValue.DataBlockLength }
+
+    let mutable reader = FlacStreamReader([| 0x69uy |], state)
+
+    Assert.True(reader.Read())
+    Assert.Equal(FlacValue.MetadataBlockData, reader.ValueType)
+    Assert.True(reader.Value.SequenceEqual([| 0x69uy |]))
+
+[<Theory>]
+[<InlineData(7)>]
+[<InlineData(69)>]
+[<InlineData(126)>]
+let ``Throws when block type is unrecognized and unknown block length`` blockType =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                BlockType = ValueSome(enum<BlockType> blockType)
+                Value = FlacValue.DataBlockLength }
+
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
+
+[<Fact>]
+let ``Throws when block type is unknown`` =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state = { FlacStreamState.Empty with Value = FlacValue.DataBlockLength }
+        let mutable reader = FlacStreamReader([| 0x69uy |], state)
+        reader.Read() |> ignore)
