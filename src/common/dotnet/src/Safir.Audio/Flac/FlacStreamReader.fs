@@ -286,7 +286,7 @@ type FlacStreamReader =
         let local = this._buffer.Slice(this._consumed, 2)
         let blockSize = BinaryPrimitives.ReadUInt16BigEndian(local)
 
-        if blockSize <= 15us then
+        if blockSize <= FlacConstants.MinBlockSize then
             flacEx "Invalid minimum block size"
 
         this._value <- local
@@ -317,7 +317,7 @@ type FlacStreamReader =
         let local = this._buffer.Slice(this._consumed, 2)
 
         // TODO: DRY
-        let a = uint16 (local[0] &&& 0x01uy) <<< 13
+        let a = uint16 (local[0] &&& 0x01uy) <<< 4
         let b = uint16 (local[1]) >>> 4
         let bps = a + b + 1us
 
