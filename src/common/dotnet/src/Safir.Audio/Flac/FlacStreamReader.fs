@@ -205,10 +205,10 @@ type FlacStreamReader =
 
     member this.Skip() =
         // TODO: Optimize to skip everything but the necessary bits
-        this.Read() |> ignore
+        this.Read()
 
     member this.SkipTo(value: FlacValue) =
-        while this.NextValue <> value && this.Read() do
+        while this.NextValue <> value && this.Skip() do
             () // We advance in the loop condition
 
     member private this.Read(value: FlacValue, length: int) =
