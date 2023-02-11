@@ -8,14 +8,6 @@ open Xunit
 let expectLengthCases count : obj array seq =
     seq { for i in 1 .. (count - 1) -> [| Array.zeroCreate<byte> i |] }
 
-let expectLengthThreeCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy |] |]; [| [| 0x00uy |] |] ]
-
-let expectLengthFourCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0x00uy; 0x00uy |] |]
-      [| [| 0x00uy |] |] ]
-
 let expectGenericBytesCases count : obj array seq =
     [ [| Array.create count 0x00uy |]
       [| Array.create count 0xFFuy |]
@@ -95,7 +87,7 @@ let ``Reads metadata block length`` (data: byte array) =
     Assert.True(reader.Value.SequenceEqual(data))
 
 [<Theory>]
-[<MemberData(nameof expectLengthThreeCases)>]
+[<MemberData(nameof expectLengthCases, 3)>]
 let ``Throws when buffer is too small for metadata block length`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
         let state = { FlacStreamState.Empty with Value = FlacValue.MetadataBlockType }
@@ -147,13 +139,8 @@ let ``Throws when minimum block size is invalid`` (data: byte array) =
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let maximumBlockSizeCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof maximumBlockSizeCases)>]
+[<MemberData(nameof expectGenericBytesCases, 2)>]
 let ``Reads maximum block size`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.MinimumBlockSize }
     let mutable reader = FlacStreamReader(data, state)
@@ -169,13 +156,8 @@ let ``Throws when buffer is too small for maximum block size`` () =
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
 
-let minimumFrameSizeCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof minimumFrameSizeCases)>]
+[<MemberData(nameof expectGenericBytesCases, 3)>]
 let ``Reads minimum frame size`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.MaximumBlockSize }
     let mutable reader = FlacStreamReader(data, state)
@@ -185,20 +167,15 @@ let ``Reads minimum frame size`` (data: byte array) =
     Assert.True(reader.Value.SequenceEqual(data))
 
 [<Theory>]
-[<MemberData(nameof expectLengthThreeCases)>]
+[<MemberData(nameof expectLengthCases, 3)>]
 let ``Throws when buffer is too small for minimum frame size`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
         let state = { FlacStreamState.Empty with Value = FlacValue.MaximumBlockSize }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let maximumFrameSizeCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof maximumFrameSizeCases)>]
+[<MemberData(nameof expectGenericBytesCases, 3)>]
 let ``Reads maximum frame size`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.MinimumFrameSize }
     let mutable reader = FlacStreamReader(data, state)
@@ -208,7 +185,7 @@ let ``Reads maximum frame size`` (data: byte array) =
     Assert.True(reader.Value.SequenceEqual(data))
 
 [<Theory>]
-[<MemberData(nameof expectLengthThreeCases)>]
+[<MemberData(nameof expectLengthCases, 3)>]
 let ``Throws when buffer is too small for maximum frame size`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
         let state = { FlacStreamState.Empty with Value = FlacValue.MinimumFrameSize }
@@ -231,7 +208,7 @@ let ``Reads sample rate`` (data: byte array) =
     Assert.True(reader.Value.SequenceEqual(data))
 
 [<Theory>]
-[<MemberData(nameof expectLengthThreeCases)>]
+[<MemberData(nameof expectLengthCases, 3)>]
 let ``Throws when buffer is too small for sample rate`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
         let state = { FlacStreamState.Empty with Value = FlacValue.MaximumFrameSize }
@@ -251,11 +228,8 @@ let ``Throws when sample rate is invalid`` (data: byte array) =
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let numberOfChannelsCases: obj array seq =
-    [ [| [| 0x00uy |] |]; [| [| 0xFFuy |] |]; [| [| 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof numberOfChannelsCases)>]
+[<MemberData(nameof expectGenericBytesCases, 1)>]
 let ``Reads number of channels`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.StreamInfoSampleRate }
     let mutable reader = FlacStreamReader(data, state)
@@ -314,14 +288,8 @@ let ``Reads total samples`` (data: byte array) =
     Assert.Equal(FlacValue.TotalSamples, reader.ValueType)
     Assert.True(reader.Value.SequenceEqual(data))
 
-let invalidTotalSamplesCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0x00uy; 0x00uy |] |]
-      [| [| 0x00uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof invalidTotalSamplesCases)>]
+[<MemberData(nameof expectLengthCases, 5)>]
 let ``Throws when buffer is too small for total samples`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
         let state = { FlacStreamState.Empty with Value = FlacValue.BitsPerSample }
@@ -341,11 +309,8 @@ let ``Reads MD5 signature`` (data: byte array) =
     Assert.Equal(FlacValue.Md5Signature, reader.ValueType)
     Assert.True(reader.Value.SequenceEqual(data))
 
-let invalidMd5SignatureCases: obj array seq =
-    seq { for i in 1..15 -> [| Array.zeroCreate<byte> i |] }
-
 [<Theory>]
-[<MemberData(nameof invalidMd5SignatureCases)>]
+[<MemberData(nameof expectLengthCases, 16)>]
 let ``Throws when buffer is too small for MD5 signature`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
         let state = { FlacStreamState.Empty with Value = FlacValue.TotalSamples }
@@ -490,13 +455,8 @@ let ``Reads to end when at padding and last block`` () =
     Assert.Equal(FlacValue.None, reader.ValueType)
     Assert.Equal(0, reader.Value.Length)
 
-let applicationIdCases: obj array seq =
-    [ [| [| 0x00uy; 0x10uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof applicationIdCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads application id`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
@@ -510,7 +470,7 @@ let ``Reads application id`` (data: byte array) =
     Assert.True(reader.Value.SequenceEqual(data))
 
 [<Theory>]
-[<MemberData(nameof expectLengthFourCases)>]
+[<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for applicationId`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
         let state =
@@ -598,13 +558,8 @@ let ``Reads to end when at application data and last block`` () =
     Assert.Equal(FlacValue.None, reader.ValueType)
     Assert.Equal(0, reader.Value.Length)
 
-let seekPointSampleNumberCases: obj array seq =
-    [ [| [| 0x00uy; 0x10uy; 0x00uy; 0x00uy; 0x00uy; 0x10uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof seekPointSampleNumberCases)>]
+[<MemberData(nameof expectGenericBytesCases, 8)>]
 let ``Reads seek point sample number`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
@@ -657,13 +612,8 @@ let ``Throws when reading seek point sample number and invalid block length`` (l
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
 
-let seekPointOffsetCases: obj array seq =
-    [ [| [| 0x00uy; 0x10uy; 0x00uy; 0x00uy; 0x00uy; 0x10uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof seekPointOffsetCases)>]
+[<MemberData(nameof expectGenericBytesCases, 8)>]
 let ``Reads seek point offset`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.SeekPointSampleNumber }
     let mutable reader = FlacStreamReader(data, state)
@@ -680,13 +630,8 @@ let ``Throws when buffer is too small for seek point offset`` (data: byte array)
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let numberOfSamplesCases: obj array seq =
-    [ [| [| 0x00uy; 0x10uy |] |]
-      [| [| 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof numberOfSamplesCases)>]
+[<MemberData(nameof expectGenericBytesCases, 2)>]
 let ``Reads number of samples`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.SeekPointOffset }
     let mutable reader = FlacStreamReader(data, state)
@@ -704,7 +649,7 @@ let ``Throws when buffer is too small for number of samples`` (data: byte array)
         reader.Read() |> ignore)
 
 [<Theory>]
-[<MemberData(nameof seekPointSampleNumberCases)>]
+[<MemberData(nameof expectGenericBytesCases, 8)>]
 let ``Reads seek point sample number when at number of samples and offset is less than count`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
@@ -798,13 +743,8 @@ let ``Reads to end when at number of samples, count equals offset, and last bloc
     Assert.Equal(FlacValue.None, reader.ValueType)
     Assert.Equal(0, reader.Value.Length)
 
-let vendorLengthCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof vendorLengthCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads vendor length`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
@@ -829,13 +769,8 @@ let ``Throws when buffer is too small for vendor length`` (data: byte array) =
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let vendorStringCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory(Skip = "We currently can't start in the middle of the vendor string")>]
-[<MemberData(nameof vendorStringCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads vendor string`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.VendorLength }
     let mutable reader = FlacStreamReader(data, state)
@@ -852,13 +787,8 @@ let ``Throws when buffer is too small for vendor string`` (data: byte array) =
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let userCommentListLengthCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof userCommentListLengthCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads user comment list length`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.VendorString }
     let mutable reader = FlacStreamReader(data, state)
@@ -875,13 +805,8 @@ let ``Throws when buffer is too small for user comment list length`` (data: byte
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let userCommentLengthCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof userCommentLengthCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads user comment length`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.UserCommentListLength }
     let mutable reader = FlacStreamReader(data, state)
@@ -898,13 +823,8 @@ let ``Throws when buffer is too small for user comment length`` (data: byte arra
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let userCommentCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory(Skip = "We currently can't start in the middle of a user comment")>]
-[<MemberData(nameof userCommentCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads user comment`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.UserCommentLength }
     let mutable reader = FlacStreamReader(data, state)
@@ -922,7 +842,7 @@ let ``Throws when buffer is too small for user comment`` (data: byte array) =
         reader.Read() |> ignore)
 
 [<Theory>]
-[<MemberData(nameof userCommentLengthCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads user comment length when at user comment and offset is less than count`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
@@ -1018,13 +938,8 @@ let ``Reads to end when at user comment, count equals offset, and last block`` (
 
 // TODO: Cue sheet tests
 
-let pictureTypeCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof pictureTypeCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads picture type`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
@@ -1049,13 +964,8 @@ let ``Throws when buffer is too small for picture type`` (data: byte array) =
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let mimeTypeLengthCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof mimeTypeLengthCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads mime type length`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.PictureType }
     let mutable reader = FlacStreamReader(data, state)
@@ -1072,13 +982,8 @@ let ``Throws when buffer is too small for mime type length`` (data: byte array) 
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let mimeTypeCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory(Skip = "We currently can't start in the middle of the mime type")>]
-[<MemberData(nameof mimeTypeCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads mime type`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.MimeTypeLength }
     let mutable reader = FlacStreamReader(data, state)
@@ -1095,13 +1000,8 @@ let ``Throws when buffer is too small for mime type`` (data: byte array) =
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let pictureDescriptionLengthCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory>]
-[<MemberData(nameof pictureDescriptionLengthCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads picture description length`` (data: byte array) =
     let state = { FlacStreamState.Empty with Value = FlacValue.MimeType }
     let mutable reader = FlacStreamReader(data, state)
@@ -1118,13 +1018,8 @@ let ``Throws when buffer is too small for picture description length`` (data: by
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
-let pictureDescriptionCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy; 0x69uy |] |] ]
-
 [<Theory(Skip = "We currently can't start in the middle of the picture description")>]
-[<MemberData(nameof pictureDescriptionCases)>]
+[<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads picture description`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with Value = FlacValue.PictureDescriptionLength }
