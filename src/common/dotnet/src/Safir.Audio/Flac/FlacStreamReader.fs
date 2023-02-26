@@ -601,7 +601,7 @@ type FlacStreamReader =
         if this._valueType <> FlacValue.LastMetadataBlockFlag then
             flacEx "Expected reader to be positioned at LastMetadataBlockFlag"
 
-        this._value[0] >>> 7 = 0x1uy
+        this._buffer[this._consumed] >>> 7 = 0x1uy
 
     member this.ReadAsLastMetadataBlockFlag() =
         this.Read() |> ignore
@@ -611,7 +611,7 @@ type FlacStreamReader =
         if this._valueType <> FlacValue.MetadataBlockType then
             flacEx "Expected reader to be positioned at MetadataBlockType"
 
-        let blockType = this._value[0] &&& 0x7Fuy |> int
+        let blockType = this._buffer[this._consumed] &&& 0x7Fuy |> int
         enum<BlockType> blockType
 
     member this.ReadAsBlockType() =
