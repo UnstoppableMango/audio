@@ -1,0 +1,9 @@
+version: 2
+updates:
+- directory: /
+  package-ecosystem: nuget
+  schedule:
+    interval: 'weekly'
+  reviewers:
+    - 'UnstoppableMango'
+  open-pull-requests-limit: 15
