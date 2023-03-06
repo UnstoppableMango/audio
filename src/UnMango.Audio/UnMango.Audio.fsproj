@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <Product>UnMango.Audio</Product>
     <TargetFramework>net7.0</TargetFramework>
@@ -9,5 +8,4 @@
   <ItemGroup>
     <None Include="packages.lock.json" />
   </ItemGroup>
-
 </Project>
