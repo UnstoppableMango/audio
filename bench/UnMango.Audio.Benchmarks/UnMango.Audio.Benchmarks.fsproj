@@ -6,7 +6,11 @@
 
   <ItemGroup>
     <None Include="packages.lock.json" />
+    <Compile Include="VorbisBench.fs" />
+    <Compile Include="FlacStreamReaderBench.fs" />
+    <Compile Include="FlacBench.fs" />
     <Compile Include="Program.fs" />
+    <Content Include="NEFFEX-Flirt.flac" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
