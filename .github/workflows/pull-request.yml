@@ -41,6 +41,16 @@ jobs:
         run: dotnet fantomas --check --recurse src test bench
 
       - name: Run tests
-        run: dotnet test --no-build --collect:"XPlat Code Coverage" --verbosity normal
+        run: |
+          dotnet test \
+            --no-build \
+            --collect:"XPlat Code Coverage" \
+            --results-directory "./coverage" \
+            --verbosity normal
+
+      - uses: codecov/codecov-action@v3
+        with:
+          directory: coverage
+          files: '**/coverage.cobertura.xml'
 
 
