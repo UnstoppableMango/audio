@@ -1,0 +1,14 @@
+#!/bin/sh
+LC_ALL=C
+
+FS_FILES=$(git diff --cached --name-only --diff-filter=ACM "*.fs" | sed 's| |\\ |g')
+[ -n "$FS_FILES" ] && dotnet fantomas --version \
+    && echo "$FS_FILES" | cat | xargs | sed -e 's/ /,/g' | xargs -0 dotnet fantomas \
+    && echo "$FS_FILES" | xargs git add
+
+CS_FILES=$(git diff --cached --name-only --diff-filter=ACM "*.cs" | sed 's| |\\ |g')
+[ -n "$CS_FILES" ] \
+    && echo "$CS_FILES" | cat | xargs | sed -e 's/ /,/g' | xargs dotnet format --include \
+    && echo "$CS_FILES" | xargs git add
+
+exit 0

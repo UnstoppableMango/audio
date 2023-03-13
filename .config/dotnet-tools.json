@@ -7,6 +7,12 @@
       "commands": [
         "minver"
       ]
+    },
+    "fantomas": {
+      "version": "5.2.3",
+      "commands": [
+        "fantomas"
+      ]
     }
   }
 }

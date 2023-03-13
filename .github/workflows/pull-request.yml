@@ -28,11 +28,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget-
 
+      - name: Restore tools
+        run: dotnet tool restore
+
       - name: Restore dependencies
         run: dotnet restore --locked-mode
 
       - name: Build solution
         run: dotnet build --no-restore
+
+      - name: Lint
+        run: dotnet fantomas --check --recurse src test bench
 
       - name: Run tests
         run: dotnet test --no-build --collect:"XPlat Code Coverage" --verbosity normal

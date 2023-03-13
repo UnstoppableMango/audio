@@ -29,3 +29,7 @@ The primary package is `UnMango.Audio` which will contain all of the metadata fu
 - Additional audio formats
 - Read partial `Stream`
 - Read stream data
+
+## Contributing
+
+Check out the documentation in the [Contributing](./docs/Contributing.md) file.
