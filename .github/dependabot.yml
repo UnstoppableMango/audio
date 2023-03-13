@@ -1,9 +1,33 @@
 version: 2
 updates:
-- directory: /
+- directory: /src/UnMango.Audio
   package-ecosystem: nuget
   schedule:
-    interval: 'weekly'
+    interval: weekly
   reviewers:
-    - 'UnstoppableMango'
+    - UnstoppableMango
+  open-pull-requests-limit: 15
+
+- directory: /test/UnMango.Audio.IntegrationTests
+  package-ecosystem: nuget
+  schedule:
+    interval: weekly
+  reviewers:
+    - UnstoppableMango
+  open-pull-requests-limit: 15
+
+- directory: /test/UnMango.Audio.Tests
+  package-ecosystem: nuget
+  schedule:
+    interval: weekly
+  reviewers:
+    - UnstoppableMango
+  open-pull-requests-limit: 15
+
+- directory: /bench/UnMango.Audio.Benchmarks
+  package-ecosystem: nuget
+  schedule:
+    interval: weekly
+  reviewers:
+    - UnstoppableMango
   open-pull-requests-limit: 15
