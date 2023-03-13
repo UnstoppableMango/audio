@@ -13,7 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(CommonSrc)\Safir.Audio\Safir.Audio.fsproj" />
+    <ProjectReference Include="..\src\Safir.Audio\Safir.Audio.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
