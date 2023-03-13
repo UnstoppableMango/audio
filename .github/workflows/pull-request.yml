@@ -37,8 +37,11 @@ jobs:
       - name: Build solution
         run: dotnet build --no-restore
 
-      - name: Lint
+      - name: Lint F#
         run: dotnet fantomas --check --recurse src test bench
+
+      - name: Lint C#
+        run: dotnet format --verify-no-changes
 
       - name: Run tests
         run: |
