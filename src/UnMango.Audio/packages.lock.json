@@ -7,6 +7,12 @@
         "requested": "[7.0.200, )",
         "resolved": "7.0.200",
         "contentHash": "NmgUnpNH6Zu9B0SPIhojyo38gnPdkdYFYQfbd6zosEH32kbGY/g/Klk7PfOWe1NAe/O1YOMmK9KhwQ2OWsWEbg=="
+      },
+      "MinVer": {
+        "type": "Direct",
+        "requested": "[4.3.0, )",
+        "resolved": "4.3.0",
+        "contentHash": "YNVAW3loCFW4kTwensApaZUl+7xREK75QQNOFSbsbXx2sCSm9/IHBjUHsJGn3u0UA5r/sAqrdYBNUlOFfLhUrA=="
       }
     }
   }

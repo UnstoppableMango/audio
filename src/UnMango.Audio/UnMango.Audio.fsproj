@@ -8,4 +8,8 @@
   <ItemGroup>
     <None Include="packages.lock.json" />
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MinVer" Version="4.3.0" PrivateAssets="all" />
+  </ItemGroup>
 </Project>
