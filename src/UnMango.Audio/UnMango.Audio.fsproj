@@ -19,6 +19,7 @@
     <Compile Include="Flac\FlacHelpers.fs" />
     <Compile Include="Flac\FlacStreamState.fs" />
     <Compile Include="Flac\FlacStreamReader.fs" />
+    <Compile Include="Flac\FlacStreamWriter.fs" />
     <Compile Include="Flac\Flac.fs" />
     <Compile Include="Flac\FlacCsTypes.fs" />
     <Compile Include="Flac\FlacCs.fs" />
