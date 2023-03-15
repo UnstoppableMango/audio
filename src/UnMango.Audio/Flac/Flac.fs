@@ -1,6 +1,7 @@
 module UnMango.Audio.Flac.Flac
 
 open System
+open System.Buffers
 open System.Buffers.Binary
 open System.Text
 open UnMango.Audio
@@ -274,3 +275,9 @@ let readStream (reader: byref<FlacStreamReader>) =
             :: metadata
 
     { Metadata = metadata |> List.rev }
+
+let addComment (stream: Span<byte>) (key: string) (value: string) =
+    // TODO: Everything
+    let buffer = ArrayBufferWriter(stream.Length)
+    let writer = FlacStreamWriter(buffer)
+    writer.WriteComment(key, value)
