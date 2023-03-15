@@ -1,7 +1,7 @@
 namespace UnMango.Audio.Flac
 
+open System
 open System.Runtime.CompilerServices
-open UnMango.Audio
 
 // TODO: More fine-grained state functions
 [<Struct; IsReadOnly>]
@@ -17,7 +17,8 @@ type FlacStreamState =
       CueSheetTrackOffset: ValueOption<int>
       CueSheetTrackIndexCount: ValueOption<int>
       CueSheetTrackIndexOffset: ValueOption<int>
-      Position: FlacValue }
+      Position: FlacValue
+      Value: byte array }
 
     static member Empty =
         { BlockLength = ValueNone
@@ -31,7 +32,8 @@ type FlacStreamState =
           CueSheetTrackOffset = ValueNone
           CueSheetTrackIndexCount = ValueNone
           CueSheetTrackIndexOffset = ValueNone
-          Position = FlacValue.None }
+          Position = FlacValue.None
+          Value = Array.Empty<byte>() }
 
     static member StreamInfoHeader = { FlacStreamState.Empty with Position = FlacValue.Marker }
 
@@ -72,3 +74,9 @@ type FlacStreamState =
     static member AfterBlockData() = FlacStreamState.AfterBlockData(false)
 
     static member AfterLastBlock() = FlacStreamState.AfterBlockData(true)
+
+    member this.GetValue() =
+        if this.Value.Length > 0 then
+            ReadOnlySpan<byte>(this.Value)
+        else
+            ReadOnlySpan<byte>.Empty
