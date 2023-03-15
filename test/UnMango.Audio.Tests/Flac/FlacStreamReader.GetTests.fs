@@ -22,7 +22,7 @@ let valuesExcept (value: int) : obj array seq =
 [<InlineData(0x80uy, true)>]
 [<InlineData(0x00uy, false)>]
 let ``Gets last metadata block flag`` (data: byte) (expected: bool) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.LastMetadataBlockFlag }
+    let state = { FlacStreamState.Empty with Position = FlacValue.LastMetadataBlockFlag }
     let reader = FlacStreamReader(ReadOnlySpan<byte>([| data |]), state)
 
     let value = reader.GetLastMetadataBlockFlag()
@@ -33,7 +33,7 @@ let ``Gets last metadata block flag`` (data: byte) (expected: bool) =
 [<MemberData(nameof valuesExcept, FlacValue.LastMetadataBlockFlag)>]
 let ``Throws when not positioned at last metadata block flag`` (value: FlacValue) =
     Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = value }
+        let state = { FlacStreamState.Empty with Position = value }
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
         reader.GetLastMetadataBlockFlag() |> ignore)
 
@@ -43,7 +43,7 @@ let ``Throws when not positioned at last metadata block flag`` (value: FlacValue
 [<InlineData(0x69uy, 105)>]
 [<InlineData(0x00uy, BlockType.StreamInfo)>]
 let ``Gets metadata block type`` (data: byte) (expected: BlockType) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.MetadataBlockType }
+    let state = { FlacStreamState.Empty with Position = FlacValue.MetadataBlockType }
     let reader = FlacStreamReader(ReadOnlySpan<byte>([| data |]), state)
 
     let value = reader.GetBlockType()
@@ -54,7 +54,7 @@ let ``Gets metadata block type`` (data: byte) (expected: BlockType) =
 [<MemberData(nameof valuesExcept, FlacValue.MetadataBlockType)>]
 let ``Throws when not positioned at last metadata block type`` (value: FlacValue) =
     Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = value }
+        let state = { FlacStreamState.Empty with Position = value }
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
         reader.GetBlockType() |> ignore)
 
@@ -68,7 +68,7 @@ let metadataBlockLengthCases: obj array seq =
 [<Theory>]
 [<MemberData(nameof metadataBlockLengthCases)>]
 let ``Reads metadata block length`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.MetadataBlockType }
+    let state = { FlacStreamState.Empty with Position = FlacValue.MetadataBlockType }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -79,7 +79,7 @@ let ``Reads metadata block length`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 3)>]
 let ``Throws when buffer is too small for metadata block length`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.MetadataBlockType }
+        let state = { FlacStreamState.Empty with Position = FlacValue.MetadataBlockType }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
@@ -94,7 +94,7 @@ let ``Reads minimum block size`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
             BlockType = ValueSome BlockType.StreamInfo
-            Value = FlacValue.DataBlockLength }
+            Position = FlacValue.DataBlockLength }
 
     let mutable reader = FlacStreamReader(data, state)
 
@@ -108,7 +108,7 @@ let ``Throws when buffer is too small for minimum block size`` () =
         let state =
             { FlacStreamState.Empty with
                 BlockType = ValueSome BlockType.StreamInfo
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
@@ -123,7 +123,7 @@ let ``Throws when minimum block size is invalid`` (data: byte array) =
         let state =
             { FlacStreamState.Empty with
                 BlockType = ValueSome BlockType.StreamInfo
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
@@ -131,7 +131,7 @@ let ``Throws when minimum block size is invalid`` (data: byte array) =
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 2)>]
 let ``Reads maximum block size`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.MinimumBlockSize }
+    let state = { FlacStreamState.Empty with Position = FlacValue.MinimumBlockSize }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -141,14 +141,14 @@ let ``Reads maximum block size`` (data: byte array) =
 [<Fact>]
 let ``Throws when buffer is too small for maximum block size`` () =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.MinimumBlockSize }
+        let state = { FlacStreamState.Empty with Position = FlacValue.MinimumBlockSize }
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
 
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 3)>]
 let ``Reads minimum frame size`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.MaximumBlockSize }
+    let state = { FlacStreamState.Empty with Position = FlacValue.MaximumBlockSize }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -159,14 +159,14 @@ let ``Reads minimum frame size`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 3)>]
 let ``Throws when buffer is too small for minimum frame size`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.MaximumBlockSize }
+        let state = { FlacStreamState.Empty with Position = FlacValue.MaximumBlockSize }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 3)>]
 let ``Reads maximum frame size`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.MinimumFrameSize }
+    let state = { FlacStreamState.Empty with Position = FlacValue.MinimumFrameSize }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -177,7 +177,7 @@ let ``Reads maximum frame size`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 3)>]
 let ``Throws when buffer is too small for maximum frame size`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.MinimumFrameSize }
+        let state = { FlacStreamState.Empty with Position = FlacValue.MinimumFrameSize }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
@@ -189,7 +189,7 @@ let sampleRateCases: obj array seq =
 [<Theory>]
 [<MemberData(nameof sampleRateCases)>]
 let ``Reads sample rate`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.MaximumFrameSize }
+    let state = { FlacStreamState.Empty with Position = FlacValue.MaximumFrameSize }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -200,7 +200,7 @@ let ``Reads sample rate`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 3)>]
 let ``Throws when buffer is too small for sample rate`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.MaximumFrameSize }
+        let state = { FlacStreamState.Empty with Position = FlacValue.MaximumFrameSize }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
@@ -213,14 +213,14 @@ let invalidSampleRateCases: obj array seq =
 [<MemberData(nameof invalidSampleRateCases)>]
 let ``Throws when sample rate is invalid`` (data: byte array) =
     Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.MaximumFrameSize }
+        let state = { FlacStreamState.Empty with Position = FlacValue.MaximumFrameSize }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 1)>]
 let ``Reads number of channels`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.StreamInfoSampleRate }
+    let state = { FlacStreamState.Empty with Position = FlacValue.StreamInfoSampleRate }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -236,7 +236,7 @@ let bitsPerSampleCases: obj array seq =
 [<Theory>]
 [<MemberData(nameof bitsPerSampleCases)>]
 let ``Reads bits per sample`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.NumberOfChannels }
+    let state = { FlacStreamState.Empty with Position = FlacValue.NumberOfChannels }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -246,7 +246,7 @@ let ``Reads bits per sample`` (data: byte array) =
 [<Fact>]
 let ``Throws when buffer is too small for bits per sample`` () =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.NumberOfChannels }
+        let state = { FlacStreamState.Empty with Position = FlacValue.NumberOfChannels }
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
 
@@ -257,7 +257,7 @@ let invalidBitsPerSampleCases: obj array seq =
 [<MemberData(nameof invalidBitsPerSampleCases)>]
 let ``Throws when bits per sample is invalid`` (data: byte array) =
     Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.NumberOfChannels }
+        let state = { FlacStreamState.Empty with Position = FlacValue.NumberOfChannels }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
@@ -270,7 +270,7 @@ let totalSamplesCases: obj array seq =
 [<Theory>]
 [<MemberData(nameof totalSamplesCases)>]
 let ``Reads total samples`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.BitsPerSample }
+    let state = { FlacStreamState.Empty with Position = FlacValue.BitsPerSample }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -281,7 +281,7 @@ let ``Reads total samples`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 5)>]
 let ``Throws when buffer is too small for total samples`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.BitsPerSample }
+        let state = { FlacStreamState.Empty with Position = FlacValue.BitsPerSample }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
@@ -291,7 +291,7 @@ let md5SignatureCases: obj array seq =
 [<Theory>]
 [<MemberData(nameof md5SignatureCases)>]
 let ``Reads MD5 signature`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.TotalSamples }
+    let state = { FlacStreamState.Empty with Position = FlacValue.TotalSamples }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -302,14 +302,14 @@ let ``Reads MD5 signature`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 16)>]
 let ``Throws when buffer is too small for MD5 signature`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.TotalSamples }
+        let state = { FlacStreamState.Empty with Position = FlacValue.TotalSamples }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Fact>]
 let ``Throws when at MD5 signature and unknown last metadata block`` () =
     Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.Md5Signature }
+        let state = { FlacStreamState.Empty with Position = FlacValue.Md5Signature }
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
 
@@ -319,7 +319,7 @@ let ``Throws when at MD5 signature and unknown last metadata block`` () =
 let ``Reads last metadata block flag when at MD5 signature and not last block`` (data: byte) =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.Md5Signature
+            Position = FlacValue.Md5Signature
             LastMetadataBlock = ValueSome false }
 
     let mutable reader =
@@ -333,7 +333,7 @@ let ``Reads last metadata block flag when at MD5 signature and not last block`` 
 let ``Reads to end when at MD5 signature and last block`` () =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.Md5Signature
+            Position = FlacValue.Md5Signature
             LastMetadataBlock = ValueSome true }
 
     let mutable reader = FlacStreamReader([| 0x69uy |], state)
@@ -352,7 +352,7 @@ let ``Reads padding`` (data: byte array) (length: uint) =
         { FlacStreamState.Empty with
             BlockType = ValueSome BlockType.Padding
             BlockLength = ValueSome length
-            Value = FlacValue.DataBlockLength }
+            Position = FlacValue.DataBlockLength }
 
     let mutable reader = FlacStreamReader(data, state)
 
@@ -366,7 +366,7 @@ let ``Throws when reading padding and no block length`` () =
         let state =
             { FlacStreamState.Empty with
                 BlockType = ValueSome BlockType.Padding
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
@@ -384,7 +384,7 @@ let ``Throws when buffer is too small for padding`` (data: byte array) (length: 
             { FlacStreamState.Empty with
                 BlockType = ValueSome BlockType.Padding
                 BlockLength = ValueSome length
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
@@ -403,7 +403,7 @@ let ``Throws when padding is invalid`` (data: byte array) (length: uint) =
             { FlacStreamState.Empty with
                 BlockType = ValueSome BlockType.Padding
                 BlockLength = ValueSome length
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
@@ -411,7 +411,7 @@ let ``Throws when padding is invalid`` (data: byte array) (length: uint) =
 [<Fact>]
 let ``Throws when at padding and unknown last metadata block`` () =
     Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.Padding }
+        let state = { FlacStreamState.Empty with Position = FlacValue.Padding }
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
 
@@ -421,7 +421,7 @@ let ``Throws when at padding and unknown last metadata block`` () =
 let ``Reads last metadata block flag when at padding and not last block`` (data: byte) =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.Padding
+            Position = FlacValue.Padding
             LastMetadataBlock = ValueSome false }
 
     let mutable reader =
@@ -435,7 +435,7 @@ let ``Reads last metadata block flag when at padding and not last block`` (data:
 let ``Reads to end when at padding and last block`` () =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.Padding
+            Position = FlacValue.Padding
             LastMetadataBlock = ValueSome true }
 
     let mutable reader = FlacStreamReader([| 0x69uy |], state)
@@ -450,7 +450,7 @@ let ``Reads application id`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
             BlockType = ValueSome BlockType.Application
-            Value = FlacValue.DataBlockLength }
+            Position = FlacValue.DataBlockLength }
 
     let mutable reader = FlacStreamReader(data, state)
 
@@ -465,7 +465,7 @@ let ``Throws when buffer is too small for applicationId`` (data: byte array) =
         let state =
             { FlacStreamState.Empty with
                 BlockType = ValueSome BlockType.Application
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
@@ -479,7 +479,7 @@ let ``Reads application data`` (data: byte array) (length: uint) =
     let state =
         { FlacStreamState.Empty with
             BlockLength = ValueSome length
-            Value = FlacValue.ApplicationId }
+            Position = FlacValue.ApplicationId }
 
     let mutable reader = FlacStreamReader(data, state)
 
@@ -490,7 +490,7 @@ let ``Reads application data`` (data: byte array) (length: uint) =
 [<Fact>]
 let ``Throws when reading application data and no block length`` () =
     Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.ApplicationId }
+        let state = { FlacStreamState.Empty with Position = FlacValue.ApplicationId }
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
 
@@ -506,7 +506,7 @@ let ``Throws when buffer is too small for application data`` (data: byte array) 
         let state =
             { FlacStreamState.Empty with
                 BlockLength = ValueSome length
-                Value = FlacValue.ApplicationId }
+                Position = FlacValue.ApplicationId }
 
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
@@ -514,7 +514,7 @@ let ``Throws when buffer is too small for application data`` (data: byte array) 
 [<Fact>]
 let ``Throws when at application data and unknown last metadata block`` () =
     Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.ApplicationData }
+        let state = { FlacStreamState.Empty with Position = FlacValue.ApplicationData }
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
 
@@ -524,7 +524,7 @@ let ``Throws when at application data and unknown last metadata block`` () =
 let ``Reads last metadata block flag when at application data and not last block`` (data: byte) =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.ApplicationData
+            Position = FlacValue.ApplicationData
             LastMetadataBlock = ValueSome false }
 
     let mutable reader =
@@ -538,7 +538,7 @@ let ``Reads last metadata block flag when at application data and not last block
 let ``Reads to end when at application data and last block`` () =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.ApplicationData
+            Position = FlacValue.ApplicationData
             LastMetadataBlock = ValueSome true }
 
     let mutable reader = FlacStreamReader([| 0x69uy |], state)
@@ -554,7 +554,7 @@ let ``Reads seek point sample number`` (data: byte array) =
         { FlacStreamState.Empty with
             BlockType = ValueSome BlockType.SeekTable
             BlockLength = ValueSome 18u
-            Value = FlacValue.DataBlockLength }
+            Position = FlacValue.DataBlockLength }
 
     let mutable reader = FlacStreamReader(data, state)
 
@@ -570,7 +570,7 @@ let ``Throws when buffer is too small for seek point sample number`` (data: byte
             { FlacStreamState.Empty with
                 BlockType = ValueSome BlockType.SeekTable
                 BlockLength = ValueSome 18u
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
@@ -581,7 +581,7 @@ let ``Throws when reading seek point sample number and no block length`` () =
         let state =
             { FlacStreamState.Empty with
                 BlockType = ValueSome BlockType.SeekTable
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
@@ -596,7 +596,7 @@ let ``Throws when reading seek point sample number and invalid block length`` (l
             { FlacStreamState.Empty with
                 BlockType = ValueSome BlockType.SeekTable
                 BlockLength = ValueSome length
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
@@ -604,7 +604,7 @@ let ``Throws when reading seek point sample number and invalid block length`` (l
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 8)>]
 let ``Reads seek point offset`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.SeekPointSampleNumber }
+    let state = { FlacStreamState.Empty with Position = FlacValue.SeekPointSampleNumber }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -615,14 +615,14 @@ let ``Reads seek point offset`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 8)>]
 let ``Throws when buffer is too small for seek point offset`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.SeekPointSampleNumber }
+        let state = { FlacStreamState.Empty with Position = FlacValue.SeekPointSampleNumber }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 2)>]
 let ``Reads number of samples`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.SeekPointOffset }
+    let state = { FlacStreamState.Empty with Position = FlacValue.SeekPointOffset }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -633,7 +633,7 @@ let ``Reads number of samples`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 2)>]
 let ``Throws when buffer is too small for number of samples`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.SeekPointOffset }
+        let state = { FlacStreamState.Empty with Position = FlacValue.SeekPointOffset }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
@@ -642,7 +642,7 @@ let ``Throws when buffer is too small for number of samples`` (data: byte array)
 let ``Reads seek point sample number when at number of samples and offset is less than count`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.NumberOfSamples
+            Position = FlacValue.NumberOfSamples
             SeekPointCount = ValueSome 2u
             SeekPointOffset = ValueSome 1u }
 
@@ -658,7 +658,7 @@ let ``Throws when at number of samples and buffer is too small for seek point sa
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
         let state =
             { FlacStreamState.Empty with
-                Value = FlacValue.NumberOfSamples
+                Position = FlacValue.NumberOfSamples
                 SeekPointCount = ValueSome 2u
                 SeekPointOffset = ValueSome 1u }
 
@@ -680,7 +680,7 @@ let ``Throws when at number of samples and state is invalid`` (count: uint vopti
     Assert.Throws<FlacStreamReaderException> (fun () ->
         let state =
             { FlacStreamState.Empty with
-                Value = FlacValue.NumberOfSamples
+                Position = FlacValue.NumberOfSamples
                 SeekPointCount = count
                 SeekPointOffset = offset }
 
@@ -692,7 +692,7 @@ let ``Throws when at number of samples, count equals offset, and unknown last me
     Assert.Throws<FlacStreamReaderException> (fun () ->
         let state =
             { FlacStreamState.Empty with
-                Value = FlacValue.NumberOfSamples
+                Position = FlacValue.NumberOfSamples
                 SeekPointCount = ValueSome 69u
                 SeekPointOffset = ValueSome 69u }
 
@@ -705,7 +705,7 @@ let ``Throws when at number of samples, count equals offset, and unknown last me
 let ``Reads last metadata block flag when at number of samples, count equals offset, and not last block`` (data: byte) =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.NumberOfSamples
+            Position = FlacValue.NumberOfSamples
             SeekPointCount = ValueSome 69u
             SeekPointOffset = ValueSome 69u
             LastMetadataBlock = ValueSome false }
@@ -721,7 +721,7 @@ let ``Reads last metadata block flag when at number of samples, count equals off
 let ``Reads to end when at number of samples, count equals offset, and last block`` () =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.NumberOfSamples
+            Position = FlacValue.NumberOfSamples
             SeekPointCount = ValueSome 69u
             SeekPointOffset = ValueSome 69u
             LastMetadataBlock = ValueSome true }
@@ -738,7 +738,7 @@ let ``Reads vendor length`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
             BlockType = ValueSome BlockType.VorbisComment
-            Value = FlacValue.DataBlockLength }
+            Position = FlacValue.DataBlockLength }
 
     let mutable reader = FlacStreamReader(data, state)
 
@@ -753,7 +753,7 @@ let ``Throws when buffer is too small for vendor length`` (data: byte array) =
         let state =
             { FlacStreamState.Empty with
                 BlockType = ValueSome BlockType.VorbisComment
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
@@ -761,7 +761,7 @@ let ``Throws when buffer is too small for vendor length`` (data: byte array) =
 [<Theory(Skip = "We currently can't start in the middle of the vendor string")>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads vendor string`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.VendorLength }
+    let state = { FlacStreamState.Empty with Position = FlacValue.VendorLength }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -772,14 +772,14 @@ let ``Reads vendor string`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for vendor string`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.VendorLength }
+        let state = { FlacStreamState.Empty with Position = FlacValue.VendorLength }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads user comment list length`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.VendorString }
+    let state = { FlacStreamState.Empty with Position = FlacValue.VendorString }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -790,14 +790,14 @@ let ``Reads user comment list length`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for user comment list length`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.VendorString }
+        let state = { FlacStreamState.Empty with Position = FlacValue.VendorString }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads user comment length`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.UserCommentListLength }
+    let state = { FlacStreamState.Empty with Position = FlacValue.UserCommentListLength }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -808,14 +808,14 @@ let ``Reads user comment length`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for user comment length`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.UserCommentListLength }
+        let state = { FlacStreamState.Empty with Position = FlacValue.UserCommentListLength }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory(Skip = "We currently can't start in the middle of a user comment")>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads user comment`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.UserCommentLength }
+    let state = { FlacStreamState.Empty with Position = FlacValue.UserCommentLength }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -826,7 +826,7 @@ let ``Reads user comment`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for user comment`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.UserCommentLength }
+        let state = { FlacStreamState.Empty with Position = FlacValue.UserCommentLength }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
@@ -835,7 +835,7 @@ let ``Throws when buffer is too small for user comment`` (data: byte array) =
 let ``Reads user comment length when at user comment and offset is less than count`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.UserComment
+            Position = FlacValue.UserComment
             UserCommentCount = ValueSome 2u
             UserCommentOffset = ValueSome 1u }
 
@@ -851,7 +851,7 @@ let ``Throws when at user comment and buffer is too small for user comment lengt
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
         let state =
             { FlacStreamState.Empty with
-                Value = FlacValue.UserComment
+                Position = FlacValue.UserComment
                 UserCommentCount = ValueSome 2u
                 UserCommentOffset = ValueSome 1u }
 
@@ -873,7 +873,7 @@ let ``Throws when at user comment and state is invalid`` (count: uint voption) (
     Assert.Throws<FlacStreamReaderException> (fun () ->
         let state =
             { FlacStreamState.Empty with
-                Value = FlacValue.UserComment
+                Position = FlacValue.UserComment
                 UserCommentCount = count
                 UserCommentOffset = offset }
 
@@ -885,7 +885,7 @@ let ``Throws when at user comment, count equals offset, and unknown last metadat
     Assert.Throws<FlacStreamReaderException> (fun () ->
         let state =
             { FlacStreamState.Empty with
-                Value = FlacValue.UserComment
+                Position = FlacValue.UserComment
                 UserCommentCount = ValueSome 69u
                 UserCommentOffset = ValueSome 69u }
 
@@ -898,7 +898,7 @@ let ``Throws when at user comment, count equals offset, and unknown last metadat
 let ``Reads last metadata block flag when at user comment, count equals offset, and not last block`` (data: byte) =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.UserComment
+            Position = FlacValue.UserComment
             UserCommentCount = ValueSome 69u
             UserCommentOffset = ValueSome 69u
             LastMetadataBlock = ValueSome false }
@@ -914,7 +914,7 @@ let ``Reads last metadata block flag when at user comment, count equals offset, 
 let ``Reads to end when at user comment, count equals offset, and last block`` () =
     let state =
         { FlacStreamState.Empty with
-            Value = FlacValue.UserComment
+            Position = FlacValue.UserComment
             UserCommentCount = ValueSome 69u
             UserCommentOffset = ValueSome 69u
             LastMetadataBlock = ValueSome true }
@@ -933,7 +933,7 @@ let ``Reads picture type`` (data: byte array) =
     let state =
         { FlacStreamState.Empty with
             BlockType = ValueSome BlockType.Picture
-            Value = FlacValue.DataBlockLength }
+            Position = FlacValue.DataBlockLength }
 
     let mutable reader = FlacStreamReader(data, state)
 
@@ -948,7 +948,7 @@ let ``Throws when buffer is too small for picture type`` (data: byte array) =
         let state =
             { FlacStreamState.Empty with
                 BlockType = ValueSome BlockType.Picture
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
@@ -956,7 +956,7 @@ let ``Throws when buffer is too small for picture type`` (data: byte array) =
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads mime type length`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.PictureType }
+    let state = { FlacStreamState.Empty with Position = FlacValue.PictureType }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -967,14 +967,14 @@ let ``Reads mime type length`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for mime type length`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.PictureType }
+        let state = { FlacStreamState.Empty with Position = FlacValue.PictureType }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory(Skip = "We currently can't start in the middle of the mime type")>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads mime type`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.MimeTypeLength }
+    let state = { FlacStreamState.Empty with Position = FlacValue.MimeTypeLength }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -985,14 +985,14 @@ let ``Reads mime type`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for mime type`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.MimeTypeLength }
+        let state = { FlacStreamState.Empty with Position = FlacValue.MimeTypeLength }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads picture description length`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.MimeType }
+    let state = { FlacStreamState.Empty with Position = FlacValue.MimeType }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -1003,7 +1003,7 @@ let ``Reads picture description length`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for picture description length`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.MimeType }
+        let state = { FlacStreamState.Empty with Position = FlacValue.MimeType }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
@@ -1011,7 +1011,7 @@ let ``Throws when buffer is too small for picture description length`` (data: by
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads picture description`` (data: byte array) =
     let state =
-        { FlacStreamState.Empty with Value = FlacValue.PictureDescriptionLength }
+        { FlacStreamState.Empty with Position = FlacValue.PictureDescriptionLength }
 
     let mutable reader = FlacStreamReader(data, state)
 
@@ -1024,7 +1024,7 @@ let ``Reads picture description`` (data: byte array) =
 let ``Throws when buffer is too small for picture description`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
         let state =
-            { FlacStreamState.Empty with Value = FlacValue.PictureDescriptionLength }
+            { FlacStreamState.Empty with Position = FlacValue.PictureDescriptionLength }
 
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
@@ -1032,7 +1032,7 @@ let ``Throws when buffer is too small for picture description`` (data: byte arra
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads picture width`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.PictureDescription }
+    let state = { FlacStreamState.Empty with Position = FlacValue.PictureDescription }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -1043,14 +1043,14 @@ let ``Reads picture width`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for picture width`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.PictureDescription }
+        let state = { FlacStreamState.Empty with Position = FlacValue.PictureDescription }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads picture height`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.PictureWidth }
+    let state = { FlacStreamState.Empty with Position = FlacValue.PictureWidth }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -1061,14 +1061,14 @@ let ``Reads picture height`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for picture height`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.PictureWidth }
+        let state = { FlacStreamState.Empty with Position = FlacValue.PictureWidth }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads picture color depth`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.PictureHeight }
+    let state = { FlacStreamState.Empty with Position = FlacValue.PictureHeight }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -1079,14 +1079,14 @@ let ``Reads picture color depth`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for picture color depth`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.PictureHeight }
+        let state = { FlacStreamState.Empty with Position = FlacValue.PictureHeight }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads picture number of colors`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.PictureColorDepth }
+    let state = { FlacStreamState.Empty with Position = FlacValue.PictureColorDepth }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -1097,14 +1097,14 @@ let ``Reads picture number of colors`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for picture number of colors`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.PictureColorDepth }
+        let state = { FlacStreamState.Empty with Position = FlacValue.PictureColorDepth }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory>]
 [<MemberData(nameof expectGenericBytesCases, 4)>]
 let ``Reads picture data length`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.PictureNumberOfColors }
+    let state = { FlacStreamState.Empty with Position = FlacValue.PictureNumberOfColors }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -1115,14 +1115,14 @@ let ``Reads picture data length`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for picture data length`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.PictureNumberOfColors }
+        let state = { FlacStreamState.Empty with Position = FlacValue.PictureNumberOfColors }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
 [<Theory(Skip = "We currently can't start in the middle of the picture data")>]
 [<MemberData(nameof expectGenericBytesCases, 69)>]
 let ``Reads picture data`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Value = FlacValue.PictureDataLength }
+    let state = { FlacStreamState.Empty with Position = FlacValue.PictureDataLength }
     let mutable reader = FlacStreamReader(data, state)
 
     Assert.True(reader.Read())
@@ -1133,7 +1133,7 @@ let ``Reads picture data`` (data: byte array) =
 [<MemberData(nameof expectLengthCases, 4)>]
 let ``Throws when buffer is too small for picture data`` (data: byte array) =
     Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.PictureDataLength }
+        let state = { FlacStreamState.Empty with Position = FlacValue.PictureDataLength }
         let mutable reader = FlacStreamReader(data, state)
         reader.Read() |> ignore)
 
@@ -1145,7 +1145,7 @@ let ``Throws when block type is invalid`` blockType =
         let state =
             { FlacStreamState.Empty with
                 BlockType = ValueSome(enum<BlockType> blockType)
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
@@ -1159,7 +1159,7 @@ let ``Reads metadata block data when block type is unrecognized`` blockType =
         { FlacStreamState.Empty with
             BlockType = ValueSome(enum<BlockType> blockType)
             BlockLength = ValueSome 1u
-            Value = FlacValue.DataBlockLength }
+            Position = FlacValue.DataBlockLength }
 
     let mutable reader = FlacStreamReader([| 0x69uy |], state)
 
@@ -1176,7 +1176,7 @@ let ``Throws when block type is unrecognized and unknown block length`` blockTyp
         let state =
             { FlacStreamState.Empty with
                 BlockType = ValueSome(enum<BlockType> blockType)
-                Value = FlacValue.DataBlockLength }
+                Position = FlacValue.DataBlockLength }
 
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
@@ -1184,6 +1184,6 @@ let ``Throws when block type is unrecognized and unknown block length`` blockTyp
 [<Fact>]
 let ``Throws when block type is unknown`` =
     Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Value = FlacValue.DataBlockLength }
+        let state = { FlacStreamState.Empty with Position = FlacValue.DataBlockLength }
         let mutable reader = FlacStreamReader([| 0x69uy |], state)
         reader.Read() |> ignore)
