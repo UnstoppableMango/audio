@@ -2,7 +2,7 @@ using UnMango.Audio.Flac;
 
 namespace UnMango.Audio.IntegrationTests;
 
-[Trait("Category", "Unit")]
+[Trait("Category", "Integration")]
 public class FlacTests
 {
     private const string FileName = "NEFFEX-Flirt";
