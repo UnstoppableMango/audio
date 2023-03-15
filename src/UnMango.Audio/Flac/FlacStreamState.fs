@@ -17,7 +17,7 @@ type FlacStreamState =
       CueSheetTrackOffset: ValueOption<int>
       CueSheetTrackIndexCount: ValueOption<int>
       CueSheetTrackIndexOffset: ValueOption<int>
-      Value: FlacValue }
+      Position: FlacValue }
 
     static member Empty =
         { BlockLength = ValueNone
@@ -31,9 +31,9 @@ type FlacStreamState =
           CueSheetTrackOffset = ValueNone
           CueSheetTrackIndexCount = ValueNone
           CueSheetTrackIndexOffset = ValueNone
-          Value = FlacValue.None }
+          Position = FlacValue.None }
 
-    static member StreamInfoHeader = { FlacStreamState.Empty with Value = FlacValue.Marker }
+    static member StreamInfoHeader = { FlacStreamState.Empty with Position = FlacValue.Marker }
 
     static member After(position: FlacValue) =
         match position with // TODO: Throw on positions that require more state
@@ -42,11 +42,11 @@ type FlacStreamState =
         | FlacValue.NumberOfSamples
         | FlacValue.UserComment
         | FlacValue.PictureData -> flacEx "More state is required. Use FlacStreamState.AfterBlockData"
-        | _ -> { FlacStreamState.Empty with Value = position }
+        | _ -> { FlacStreamState.Empty with Position = position }
 
     static member AfterBlockHeader(lastBlock: bool, length: uint32, blockType: BlockType, state: FlacStreamState) =
         { state with
-            Value = FlacValue.DataBlockLength
+            Position = FlacValue.DataBlockLength
             LastMetadataBlock = ValueSome lastBlock
             BlockLength = ValueSome length
             BlockType = ValueSome blockType }
@@ -60,7 +60,7 @@ type FlacStreamState =
     static member AfterBlockData(lastBlock: bool) =
         let state =
             { FlacStreamState.Empty with
-                Value = FlacValue.PictureData // TODO: More generic position
+                Position = FlacValue.PictureData // TODO: More generic position
                 SeekPointCount = ValueSome 0u // TODO: Will zero values here bite us?
                 SeekPointOffset = ValueSome 0u
                 UserCommentCount = ValueSome 0u

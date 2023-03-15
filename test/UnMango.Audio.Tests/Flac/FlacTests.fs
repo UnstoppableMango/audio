@@ -28,7 +28,7 @@ let ``readMagic throws when stream marker is invalid`` () =
 [<Fact>]
 let ``Reads metadata block header`` () =
     let data = [| 0x81uy; 0x00uy; 0x00uy; 0x45uy |]
-    let state = { FlacStreamState.Empty with Value = FlacValue.Marker }
+    let state = { FlacStreamState.Empty with Position = FlacValue.Marker }
     let mutable reader = FlacStreamReader(data, state)
 
     let result = Flac.readMetadataBlockHeader (&reader)
