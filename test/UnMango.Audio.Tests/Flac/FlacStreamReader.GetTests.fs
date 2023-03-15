@@ -22,8 +22,12 @@ let valuesExcept (value: int) : obj array seq =
 [<InlineData(0x80uy, true)>]
 [<InlineData(0x00uy, false)>]
 let ``Gets last metadata block flag`` (data: byte) (expected: bool) =
-    let state = { FlacStreamState.Empty with Position = FlacValue.LastMetadataBlockFlag }
-    let reader = FlacStreamReader(ReadOnlySpan<byte>([| data |]), state)
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.LastMetadataBlockFlag
+            Value = [| data |] }
+
+    let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     let value = reader.GetLastMetadataBlockFlag()
 
@@ -43,8 +47,8 @@ let ``Throws when not positioned at last metadata block flag`` (value: FlacValue
 [<InlineData(0x69uy, 105)>]
 [<InlineData(0x00uy, BlockType.StreamInfo)>]
 let ``Gets metadata block type`` (data: byte) (expected: BlockType) =
-    let state = { FlacStreamState.Empty with Position = FlacValue.MetadataBlockType }
-    let reader = FlacStreamReader(ReadOnlySpan<byte>([| data |]), state)
+    let state = { FlacStreamState.Empty with Position = FlacValue.MetadataBlockType; Value = [| data |] }
+    let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     let value = reader.GetBlockType()
 
@@ -58,49 +62,47 @@ let ``Throws when not positioned at last metadata block type`` (value: FlacValue
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
         reader.GetBlockType() |> ignore)
 
-// WIP: TODO: Start here
-
 let metadataBlockLengthCases: obj array seq =
-    [ [| [| 0x00uy; 0x00uy; 0x00uy |] |]
-      [| [| 0xFFuy; 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy; 0x69uy |] |] ]
+    [ [| [| 0x00uy; 0x00uy; 0x00uy |]; 0 |]
+      [| [| 0xFFuy; 0xFFuy; 0xFFuy |]; 16_777_215 |]
+      [| [| 0x69uy; 0x69uy; 0x69uy |]; 6_908_265 |] ]
 
 [<Theory>]
 [<MemberData(nameof metadataBlockLengthCases)>]
-let ``Reads metadata block length`` (data: byte array) =
-    let state = { FlacStreamState.Empty with Position = FlacValue.MetadataBlockType }
-    let mutable reader = FlacStreamReader(data, state)
+let ``Gets metadata block length`` (data: byte array) (expected: uint32) =
+    let state = { FlacStreamState.Empty with Position = FlacValue.DataBlockLength; Value = data }
+    let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
-    Assert.True(reader.Read())
-    Assert.Equal(FlacValue.DataBlockLength, reader.ValueType)
-    Assert.True(reader.Value.SequenceEqual(data))
+    let value = reader.GetDataBlockLength()
+
+    Assert.Equal(expected, value)
 
 [<Theory>]
-[<MemberData(nameof expectLengthCases, 3)>]
-let ``Throws when buffer is too small for metadata block length`` (data: byte array) =
-    Assert.Throws<ArgumentOutOfRangeException> (fun () ->
-        let state = { FlacStreamState.Empty with Position = FlacValue.MetadataBlockType }
-        let mutable reader = FlacStreamReader(data, state)
-        reader.Read() |> ignore)
+[<MemberData(nameof valuesExcept, FlacValue.DataBlockLength)>]
+let ``Throws when not positioned at data block length`` (value: FlacValue) =
+    Assert.Throws<FlacStreamReaderException> (fun () ->
+        let state = { FlacStreamState.Empty with Position = value }
+        let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
+        reader.GetDataBlockLength() |> ignore)
 
 let minimumBlockSizeCases: obj array seq =
-    [ [| [| 0x00uy; 0x10uy |] |]
-      [| [| 0xFFuy; 0xFFuy |] |]
-      [| [| 0x69uy; 0x69uy |] |] ]
+    [ [| [| 0x00uy; 0x10uy |]; 16 |]
+      [| [| 0xFFuy; 0xFFuy |]; 65_535 |]
+      [| [| 0x69uy; 0x69uy |]; 26_985 |] ]
 
 [<Theory>]
 [<MemberData(nameof minimumBlockSizeCases)>]
-let ``Reads minimum block size`` (data: byte array) =
+let ``Gets minimum block size`` (data: byte array) (expected: uint16) =
     let state =
         { FlacStreamState.Empty with
-            BlockType = ValueSome BlockType.StreamInfo
-            Position = FlacValue.DataBlockLength }
+            Position = FlacValue.MinimumBlockSize
+            Value = data }
 
-    let mutable reader = FlacStreamReader(data, state)
+    let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
-    Assert.True(reader.Read())
-    Assert.Equal(FlacValue.MinimumBlockSize, reader.ValueType)
-    Assert.True(reader.Value.SequenceEqual(data))
+    let value = reader.GetMinimumBlockSize()
+
+    Assert.Equal(expected, value)
 
 [<Fact>]
 let ``Throws when buffer is too small for minimum block size`` () =
