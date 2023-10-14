@@ -37,8 +37,8 @@
       },
       "FSharp.Core": {
         "type": "Transitive",
-        "resolved": "7.0.200",
-        "contentHash": "NmgUnpNH6Zu9B0SPIhojyo38gnPdkdYFYQfbd6zosEH32kbGY/g/Klk7PfOWe1NAe/O1YOMmK9KhwQ2OWsWEbg=="
+        "resolved": "7.0.400",
+        "contentHash": "SZR1jcjcrdhjRObN/U16nI+RyvKBgg0zq8Pt2KAorDkvW0cXSjX4qKDNX+LpZaKZRA5QR9StHZ2mhT5VI/QSxw=="
       },
       "Microsoft.CodeCoverage": {
         "type": "Transitive",
@@ -1024,7 +1024,7 @@
       "unmango.audio": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[7.0.200, )"
+          "FSharp.Core": "[7.0.400, )"
         }
       }
     }
