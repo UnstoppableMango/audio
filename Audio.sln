@@ -17,6 +17,27 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnMango.Audio.IntegrationTe
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "UnMango.Audio.Tests", "test\UnMango.Audio.Tests\UnMango.Audio.Tests.fsproj", "{F2AC4B64-B025-452A-B361-F56999784A21}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{2F5F69F7-34DE-4DD1-A120-B4336D17C4D9}"
+	ProjectSection(SolutionItems) = preProject
+		global.json = global.json
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "github", "github", "{4FDB74B6-4901-448C-9BFD-D811BC106355}"
+	ProjectSection(SolutionItems) = preProject
+		.github\workflows\pull-request.yml = .github\workflows\pull-request.yml
+		.github\workflows\release.yml = .github\workflows\release.yml
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{0AFC06D6-5C71-4712-A959-E24517BCA975}"
+	ProjectSection(SolutionItems) = preProject
+		docs\Contributing.md = docs\Contributing.md
+		LICENSE = LICENSE
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{DB303237-4457-4796-B5F7-55CB895F36F7}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
