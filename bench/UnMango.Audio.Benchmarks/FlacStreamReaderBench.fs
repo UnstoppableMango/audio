@@ -13,4 +13,5 @@ type FlacStreamReaderBench() =
         let reader = FlacStreamReader(bytes)
 
         for i = 0 to 117 do
-            reader.Read() |> ignore
+            reader.Read()
+            |> ignore

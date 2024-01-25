@@ -17,18 +17,29 @@ let readComment (f: ReadOnlySpan<byte>) =
 
     let midIndex = rest.IndexOf(byte '=')
 
-    if midIndex = -1 then throw "Invalid vorbis comment"
+    if midIndex = -1 then
+        throw "Invalid vorbis comment"
 
     let name = rest.Slice(0, midIndex)
-    let value = rest.Slice(midIndex + 1, (int length) - midIndex - 1)
+
+    let value =
+        rest.Slice(
+            midIndex + 1,
+            (int length)
+            - midIndex
+            - 1
+        )
 
     raise (NotImplementedException())
-    // { Length = length
-    //   Name = name
-    //   Value = value }
+// { Length = length
+//   Name = name
+//   Value = value }
 
 let readCommentHeader (f: ReadOnlySpan<byte>) (length: int) =
-    if int64 length >= ((pown 2L 32) - 1L) then
+    if
+        int64 length
+        >= ((pown 2L 32) - 1L)
+    then
         throw "Invalid vorbis comment header block length"
 
     // Read as uint32 because that's what the spec defines,
@@ -37,7 +48,9 @@ let readCommentHeader (f: ReadOnlySpan<byte>) (length: int) =
     let vendorLengthInt = vendorLength |> int
     let vendorString = f.Slice(4, vendorLengthInt)
 
-    let listLength = BinaryPrimitives.ReadUInt32LittleEndian(f.Slice(vendorLengthInt + 4, 4))
+    let listLength =
+        BinaryPrimitives.ReadUInt32LittleEndian(f.Slice(vendorLengthInt + 4, 4))
+
     let listLengthInt = listLength |> int
 
     let listStart = vendorLengthInt + 8
@@ -52,14 +65,17 @@ let readCommentHeader (f: ReadOnlySpan<byte>) (length: int) =
 
     // TODO: Supposedly flac doesn't include the framing bit
     // https://xiph.org/flac/format.html#METADATA_BLOCK_VORBIS_COMMENT
-    if f[offset + 1] &&& 0x01uy = 0x00uy then
+    if
+        f[offset + 1]
+        &&& 0x01uy = 0x00uy
+    then
         throw "Missing framing bit"
 
     raise (NotImplementedException())
-    // { VendorLength = vendorLength
-    //   VendorString = vendorString
-    //   UserCommentListLength = listLength
-    //   UserComments = comments }
+// { VendorLength = vendorLength
+//   VendorString = vendorString
+//   UserCommentListLength = listLength
+//   UserComments = comments }
 
 let toComment (comment: string) =
     let split = comment.Split("=")

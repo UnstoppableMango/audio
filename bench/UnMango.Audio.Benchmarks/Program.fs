@@ -1,6 +1,8 @@
 ﻿open BenchmarkDotNet.Running
 
-type Marker = class end
+type Marker =
+    class
+    end
 
 [<EntryPoint>]
 let main argv =

@@ -50,7 +50,12 @@ type FlacStreamReader =
 
     new(buffer: ReadOnlySpan<byte>) = FlacStreamReader(buffer, FlacStreamState.Empty)
 
-    member this.ValueType = if this._hasValue then this._valueType else FlacValue.None
+    member this.ValueType =
+        if this._hasValue then
+            this._valueType
+        else
+            FlacValue.None
+
     member this.Value = this._value
 
     member private this.NextMetadataBlock =
@@ -208,25 +213,36 @@ type FlacStreamReader =
         this.Read()
 
     member this.SkipTo(value: FlacValue) =
-        while this.NextValue <> value && this.Skip() do
+        while this.NextValue
+              <> value
+              && this.Skip() do
             () // We advance in the loop condition
 
     member private this.Read(value: FlacValue, length: int) =
         this._value <- this._buffer.Slice(this._consumed, length)
-        this._consumed <- this._consumed + length
+
+        this._consumed <-
+            this._consumed
+            + length
+
         this._valueType <- value
 
     member private this.ReadMagic() =
         let local = this._buffer.Slice(this._consumed, 4)
 
-        if not <| local.SequenceEqual("fLaC"B) then
+        if
+            not
+            <| local.SequenceEqual("fLaC"B)
+        then
             flacEx "Invalid stream marker"
 
         this._value <- local
         this._consumed <- this._consumed + 4
 
     member private this.ReadLastMetadataBlockFlag() =
-        let local = this._buffer[this._consumed] >>> 7 = 0x1uy // TODO: DRY
+        let local =
+            this._buffer[this._consumed]
+            >>> 7 = 0x1uy // TODO: DRY
 
         this._value <- this._buffer.Slice(this._consumed, 1)
         this._lastMetadataBlock <- ValueSome local
@@ -237,7 +253,8 @@ type FlacStreamReader =
         let local = temp &&& 0x7Fuy // TODO: DRY
 
         // Impossible, but technically correct
-        if local > 127uy then flacEx "Invalid metadata block type"
+        if local > 127uy then
+            flacEx "Invalid metadata block type"
 
         this._value <- this._buffer.Slice(this._consumed, 1)
         this._consumed <- this._consumed + 1
@@ -286,7 +303,10 @@ type FlacStreamReader =
         let local = this._buffer.Slice(this._consumed, 2)
         let blockSize = BinaryPrimitives.ReadUInt16BigEndian(local)
 
-        if blockSize <= FlacConstants.MinBlockSize then
+        if
+            blockSize
+            <= FlacConstants.MinBlockSize
+        then
             flacEx "Invalid minimum block size"
 
         this._value <- local
@@ -295,9 +315,15 @@ type FlacStreamReader =
 
     member private this.ReadSampleRate() =
         let local = this._buffer.Slice(this._consumed, 3)
-        let sampleRate = (readUInt32 local) >>> 4 // TODO: DRY
 
-        if sampleRate = 0u || sampleRate > FlacConstants.MaxSampleRate then
+        let sampleRate =
+            (readUInt32 local)
+            >>> 4 // TODO: DRY
+
+        if
+            sampleRate = 0u
+            || sampleRate > FlacConstants.MaxSampleRate
+        then
             flacEx "Invalid sample rate"
 
         // TODO: How to represent this is offset by 4 bits?
@@ -317,11 +343,20 @@ type FlacStreamReader =
         let local = this._buffer.Slice(this._consumed, 2)
 
         // TODO: DRY
-        let a = uint16 (local[0] &&& 0x01uy) <<< 4
-        let b = uint16 (local[1]) >>> 4
+        let a =
+            uint16 (local[0] &&& 0x01uy)
+            <<< 4
+
+        let b =
+            uint16 (local[1])
+            >>> 4
+
         let bps = a + b + 1us
 
-        if bps < 4us || bps > 32us then
+        if
+            bps < 4us
+            || bps > 32us
+        then
             flacEx "Invalid bits per sample"
 
         this._value <- local
@@ -340,7 +375,10 @@ type FlacStreamReader =
 
             let local = this._buffer.Slice(this._consumed, l)
 
-            if local.IndexOfAnyExcept(0uy) <> -1 then
+            if
+                local.IndexOfAnyExcept(0uy)
+                <> -1
+            then
                 flacEx "Padding contains invalid bytes"
 
             this._value <- local
@@ -384,12 +422,18 @@ type FlacStreamReader =
             flacEx "Invalid VendorStringLength"
 
         // TODO: DRY
-        let length = BinaryPrimitives.ReadUInt32LittleEndian(this._value) |> int
+        let length =
+            BinaryPrimitives.ReadUInt32LittleEndian(this._value)
+            |> int
+
         let local = this._buffer.Slice(this._consumed, length)
 
         this._value <- local
         this._valueType <- FlacValue.VendorString
-        this._consumed <- this._consumed + length
+
+        this._consumed <-
+            this._consumed
+            + length
 
     member private this.ReadUserCommentListLength() =
         this.Read(FlacValue.UserCommentListLength, 4)
@@ -409,12 +453,18 @@ type FlacStreamReader =
         if this._value.Length < 4 then
             flacEx "Invalid UserCommentLength"
 
-        let length = BinaryPrimitives.ReadUInt32LittleEndian(this._value) |> int
+        let length =
+            BinaryPrimitives.ReadUInt32LittleEndian(this._value)
+            |> int
+
         let local = this._buffer.Slice(this._consumed, length)
 
         this._value <- local
         this._valueType <- FlacValue.UserComment
-        this._consumed <- this._consumed + length
+
+        this._consumed <-
+            this._consumed
+            + length
 
         match this._userCommentOffset with
         | ValueNone -> flacEx "Expected a value for UserCommentOffset"
@@ -443,7 +493,12 @@ type FlacStreamReader =
     member private this.ReadCueSheetTrackIndexReserved() =
         let local = this._buffer.Slice(this._consumed, 3)
 
-        if local.Slice(1).IndexOfAnyExcept(0uy) <> -1 then
+        if
+            local
+                .Slice(1)
+                .IndexOfAnyExcept(0uy)
+            <> -1
+        then
             flacEx "Reserved block contains invalid bytes"
 
         this._value <- local
@@ -457,19 +512,26 @@ type FlacStreamReader =
         let local = this._buffer[this._consumed]
 
         // This may be a soft requirement...
-        if local = 0uy then flacEx "Invalid cue sheet track number"
+        if local = 0uy then
+            flacEx "Invalid cue sheet track number"
 
         this._value <- ReadOnlySpan<byte>(&local)
         this._consumed <- this._consumed + 1
         this._valueType <- FlacValue.TrackNumber
 
     member private this.ReadCueSheetTrackType() =
-        let local = this._buffer[this._consumed] &&& 0x80uy
+        let local =
+            this._buffer[this._consumed]
+            &&& 0x80uy
+
         this._value <- ReadOnlySpan<byte>(&local)
         this._valueType <- FlacValue.TrackType
 
     member private this.ReadCueSheetTrackPreEmphasis() =
-        let local = this._buffer[this._consumed] &&& 0x40uy
+        let local =
+            this._buffer[this._consumed]
+            &&& 0x40uy
+
         this._value <- ReadOnlySpan<byte>(&local)
         this._valueType <- FlacValue.PreEmphasis
 
@@ -477,7 +539,12 @@ type FlacStreamReader =
         let local = this._buffer.Slice(this._consumed, 14)
 
         // TODO: This doesn't account for the leading 6 bits
-        if local.Slice(1).IndexOfAnyExcept(0uy) <> -1 then
+        if
+            local
+                .Slice(1)
+                .IndexOfAnyExcept(0uy)
+            <> -1
+        then
             flacEx "Reserved block contains invalid bytes"
 
         // TODO: How to represent this is offset by two bits?
@@ -495,7 +562,10 @@ type FlacStreamReader =
         this.Read(FlacValue.NumberOfLeadInSamples, 8)
 
     member private this.ReadIsCueSheetCompactDisc() =
-        let local = this._buffer[this._consumed] >>> 7
+        let local =
+            this._buffer[this._consumed]
+            >>> 7
+
         this._value <- ReadOnlySpan<byte>(&local)
         this._valueType <- FlacValue.IsCueSheetCompactDisc
 
@@ -503,7 +573,12 @@ type FlacStreamReader =
         let local = this._buffer.Slice(this._consumed, 259)
 
         // TODO: This doesn't account for the leading 7 bits
-        if local.Slice(1).IndexOfAnyExcept(0uy) <> -1 then
+        if
+            local
+                .Slice(1)
+                .IndexOfAnyExcept(0uy)
+            <> -1
+        then
             flacEx "Reserved block contains invalid bytes"
 
         // TODO: How to represent this is offset by one bit?
@@ -566,352 +641,560 @@ type FlacStreamReader =
         if this._value.Length < 4 then
             flacEx "Mime type length is too short"
 
-        let length = BinaryPrimitives.ReadUInt32BigEndian(this._value) |> int
+        let length =
+            BinaryPrimitives.ReadUInt32BigEndian(this._value)
+            |> int
+
         let local = this._buffer.Slice(this._consumed, length)
 
         this._value <- local
-        this._consumed <- this._consumed + length
+
+        this._consumed <-
+            this._consumed
+            + length
+
         this._valueType <- FlacValue.MimeType
 
     member private this.ReadPictureDescription() =
         if this._value.Length < 4 then
             flacEx "Picture description length is too short"
 
-        let length = BinaryPrimitives.ReadUInt32BigEndian(this._value) |> int
+        let length =
+            BinaryPrimitives.ReadUInt32BigEndian(this._value)
+            |> int
 
         let local = this._buffer.Slice(this._consumed, length)
 
         this._value <- local
-        this._consumed <- this._consumed + length
+
+        this._consumed <-
+            this._consumed
+            + length
+
         this._valueType <- FlacValue.PictureDescription
 
     member private this.ReadPictureData() =
         if this._value.Length < 4 then
             flacEx "Picture data length is too short"
 
-        let length = BinaryPrimitives.ReadUInt32BigEndian(this._value) |> int
+        let length =
+            BinaryPrimitives.ReadUInt32BigEndian(this._value)
+            |> int
 
         let local = this._buffer.Slice(this._consumed, length)
 
         this._value <- local
-        this._consumed <- this._consumed + length
+
+        this._consumed <-
+            this._consumed
+            + length
+
         this._valueType <- FlacValue.PictureData
 
     member this.GetLastMetadataBlockFlag() =
-        if this._valueType <> FlacValue.LastMetadataBlockFlag then
+        if
+            this._valueType
+            <> FlacValue.LastMetadataBlockFlag
+        then
             flacEx "Expected reader to be positioned at LastMetadataBlockFlag"
 
         this._value[0] >>> 7 = 0x1uy
 
     member this.ReadAsLastMetadataBlockFlag() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetLastMetadataBlockFlag()
 
     member this.GetBlockType() =
-        if this._valueType <> FlacValue.MetadataBlockType then
+        if
+            this._valueType
+            <> FlacValue.MetadataBlockType
+        then
             flacEx "Expected reader to be positioned at MetadataBlockType"
 
-        let blockType = this._value[0] &&& 0x7Fuy |> int
+        let blockType =
+            this._value[0]
+            &&& 0x7Fuy
+            |> int
+
         enum<BlockType> blockType
 
     member this.ReadAsBlockType() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetBlockType()
 
     member this.GetDataBlockLength() =
-        if this._valueType <> FlacValue.DataBlockLength then
+        if
+            this._valueType
+            <> FlacValue.DataBlockLength
+        then
             flacEx "Expected reader to be positioned at DataBlockLength"
 
         readUInt32 this._value
 
     member this.ReadAsDataBlockLength() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetDataBlockLength()
 
     member this.GetMinimumBlockSize() =
-        if this._valueType <> FlacValue.MinimumBlockSize then
+        if
+            this._valueType
+            <> FlacValue.MinimumBlockSize
+        then
             flacEx "Expected reader to be positioned at MinimumBlockSize"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
 
     member this.ReadAsMinimumBlockSize() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetMinimumBlockSize()
 
     member this.GetMaximumBlockSize() =
-        if this._valueType <> FlacValue.MaximumBlockSize then
+        if
+            this._valueType
+            <> FlacValue.MaximumBlockSize
+        then
             flacEx "Expected reader to be positioned at MaximumBlockSize"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
 
     member this.ReadAsMaximumBlockSize() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetMaximumBlockSize()
 
     member this.GetMinimumFrameSize() =
-        if this._valueType <> FlacValue.MinimumFrameSize then
+        if
+            this._valueType
+            <> FlacValue.MinimumFrameSize
+        then
             flacEx "Expected reader to be positioned at MinimumFrameSize"
 
         readUInt32 this._value
 
     member this.ReadAsMinimumFrameSize() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetMinimumFrameSize()
 
     member this.GetMaximumFrameSize() =
-        if this._valueType <> FlacValue.MaximumFrameSize then
+        if
+            this._valueType
+            <> FlacValue.MaximumFrameSize
+        then
             flacEx "Expected reader to be positioned at MaximumFrameSize"
 
         readUInt32 this._value
 
     member this.ReadAsMaximumFrameSize() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetMaximumFrameSize()
 
     member this.GetSampleRate() =
-        if this._valueType <> FlacValue.StreamInfoSampleRate then
+        if
+            this._valueType
+            <> FlacValue.StreamInfoSampleRate
+        then
             flacEx "Expected reader to be positioned at StreamInfoSampleRate"
 
-        readUInt32 this._value >>> 4
+        readUInt32 this._value
+        >>> 4
 
     member this.ReadAsSampleRate() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetSampleRate()
 
     member this.GetChannels() =
-        if this._valueType <> FlacValue.NumberOfChannels then
+        if
+            this._valueType
+            <> FlacValue.NumberOfChannels
+        then
             flacEx "Expected reader to be positioned at NumberOfChannels"
 
-        uint16 (this._value[0] &&& 0x0Euy >>> 1) + 1us
+        uint16 (
+            this._value[0]
+            &&& 0x0Euy
+            >>> 1
+        )
+        + 1us
 
     member this.ReadAsChannels() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetChannels()
 
     member this.GetBitsPerSample() =
-        if this._valueType <> FlacValue.BitsPerSample then
+        if
+            this._valueType
+            <> FlacValue.BitsPerSample
+        then
             flacEx "Expected reader to be positioned at BitsPerSample"
 
-        let a = uint16 (this._value[0] &&& 0x01uy) <<< 13
-        let b = uint16 (this._value[1]) >>> 4
+        let a =
+            uint16 (
+                this._value[0]
+                &&& 0x01uy
+            )
+            <<< 13
+
+        let b =
+            uint16 (this._value[1])
+            >>> 4
+
         a + b + 1us
 
     member this.ReadAsBitsPerSample() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetBitsPerSample()
 
     member this.GetTotalSamples() =
-        if this._valueType <> FlacValue.TotalSamples then
+        if
+            this._valueType
+            <> FlacValue.TotalSamples
+        then
             flacEx "Expected reader to be positioned at TotalSamples"
 
-        let a = uint64 (this._value[0] &&& 0x0Fuy) <<< 8 * 4
-        let b = uint64 this._value[1] <<< 8 * 3
-        let c = uint64 this._value[2] <<< 8 * 2
-        let d = uint64 this._value[3] <<< 8
+        let a =
+            uint64 (
+                this._value[0]
+                &&& 0x0Fuy
+            )
+            <<< 8 * 4
+
+        let b =
+            uint64 this._value[1]
+            <<< 8 * 3
+
+        let c =
+            uint64 this._value[2]
+            <<< 8 * 2
+
+        let d =
+            uint64 this._value[3]
+            <<< 8
+
         let e = uint64 this._value[4]
         a + b + c + d + e
 
     member this.ReadAsTotalSamples() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetTotalSamples()
 
     member this.GetMd5Signature() =
-        if this._valueType <> FlacValue.Md5Signature then
+        if
+            this._valueType
+            <> FlacValue.Md5Signature
+        then
             flacEx "Expected reader to be positioned at Md5Signature"
 
         Convert.ToHexString(this._value)
 
     member this.ReadAsMd5Signature() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetMd5Signature()
 
     member this.GetSeekPointSampleNumber() =
-        if this._valueType <> FlacValue.SeekPointSampleNumber then
+        if
+            this._valueType
+            <> FlacValue.SeekPointSampleNumber
+        then
             flacEx "Expected reader to be positioned at SeekPointSampleNumber"
 
         BinaryPrimitives.ReadUInt64BigEndian(this._value)
 
     member this.ReadAsSeekPointSampleNumber() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetSeekPointSampleNumber()
 
     member this.GetSeekPointOffset() =
-        if this._valueType <> FlacValue.SeekPointOffset then
+        if
+            this._valueType
+            <> FlacValue.SeekPointOffset
+        then
             flacEx "Expected reader to be positioned at SeekPointOffset"
 
         BinaryPrimitives.ReadUInt64BigEndian(this._value)
 
     member this.ReadAsSeekPointOffset() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetSeekPointOffset()
 
     member this.GetSeekPointNumberOfSamples() =
-        if this._valueType <> FlacValue.NumberOfSamples then
+        if
+            this._valueType
+            <> FlacValue.NumberOfSamples
+        then
             flacEx "Expected reader to be positioned at NumberOfSamples"
 
         BinaryPrimitives.ReadUInt16BigEndian(this._value)
 
     member this.ReadAsSeekPointNumberOfSamples() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetSeekPointNumberOfSamples()
 
     member this.GetVendorLength() =
-        if this._valueType <> FlacValue.VendorLength then
+        if
+            this._valueType
+            <> FlacValue.VendorLength
+        then
             flacEx "Expected reader to be positioned at VendorLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
     member this.ReadAsVendorLength() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetVendorLength()
 
     member this.GetVendorString() =
-        if this._valueType <> FlacValue.VendorString then
+        if
+            this._valueType
+            <> FlacValue.VendorString
+        then
             flacEx "Expected reader to be positioned at VendorString"
 
         Encoding.UTF8.GetString(this._value)
 
     member this.ReadAsVendorString() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetVendorString()
 
     member this.GetUserCommentListLength() =
-        if this._valueType <> FlacValue.UserCommentListLength then
+        if
+            this._valueType
+            <> FlacValue.UserCommentListLength
+        then
             flacEx "Expected reader to be positioned at UserCommentListLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
     member this.ReadAsUserCommentListLength() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetUserCommentListLength()
 
     member this.GetUserCommentLength() =
-        if this._valueType <> FlacValue.UserCommentLength then
+        if
+            this._valueType
+            <> FlacValue.UserCommentLength
+        then
             flacEx "Expected reader to be positioned at UserCommentLength"
 
         BinaryPrimitives.ReadUInt32LittleEndian(this._value)
 
     member this.ReadAsUserCommentLength() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetUserCommentLength()
 
     member this.GetUserComment() =
-        if this._valueType <> FlacValue.UserComment then
+        if
+            this._valueType
+            <> FlacValue.UserComment
+        then
             flacEx "Expected reader to be positioned at UserComment"
 
         Encoding.UTF8.GetString(this._value)
 
     member this.ReadAsUserComment() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetUserComment()
 
     member this.GetPictureType() =
-        if this._valueType <> FlacValue.PictureType then
+        if
+            this._valueType
+            <> FlacValue.PictureType
+        then
             flacEx "Expected reader to be positioned at PictureType"
 
         let pictureType = BinaryPrimitives.ReadUInt32BigEndian(this._value)
         enum<PictureType> (int pictureType)
 
     member this.ReadAsPictureType() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetPictureType()
 
     member this.GetMimeTypeLength() =
-        if this._valueType <> FlacValue.MimeTypeLength then
+        if
+            this._valueType
+            <> FlacValue.MimeTypeLength
+        then
             flacEx "Expected reader to be positioned at MimeTypeLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.ReadAsMimeTypeLength() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetMimeTypeLength()
 
     member this.GetMimeType() =
-        if this._valueType <> FlacValue.MimeType then
+        if
+            this._valueType
+            <> FlacValue.MimeType
+        then
             flacEx "Expected reader to be positioned at MimeType"
 
         Encoding.UTF8.GetString(this._value)
 
     member this.ReadAsMimeType() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetMimeType()
 
     member this.GetPictureDescriptionLength() =
-        if this._valueType <> FlacValue.PictureDescriptionLength then
+        if
+            this._valueType
+            <> FlacValue.PictureDescriptionLength
+        then
             flacEx "Expected reader to be positioned at PictureDescriptionLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.ReadAsPictureDescriptionLength() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetPictureDescriptionLength()
 
     member this.GetPictureDescription() =
-        if this._valueType <> FlacValue.PictureDescription then
+        if
+            this._valueType
+            <> FlacValue.PictureDescription
+        then
             flacEx "Expected reader to be positioned at PictureDescription"
 
         Encoding.UTF8.GetString(this._value)
 
     member this.ReadAsPictureDescription() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetPictureDescription()
 
     member this.GetPictureWidth() =
-        if this._valueType <> FlacValue.PictureWidth then
+        if
+            this._valueType
+            <> FlacValue.PictureWidth
+        then
             flacEx "Expected reader to be positioned at PictureWidth"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.ReadAsPictureWidth() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetPictureWidth()
 
     member this.GetPictureHeight() =
-        if this._valueType <> FlacValue.PictureHeight then
+        if
+            this._valueType
+            <> FlacValue.PictureHeight
+        then
             flacEx "Expected reader to be positioned at PictureHeight"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.ReadAsPictureHeight() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetPictureHeight()
 
     member this.GetPictureColorDepth() =
-        if this._valueType <> FlacValue.PictureColorDepth then
+        if
+            this._valueType
+            <> FlacValue.PictureColorDepth
+        then
             flacEx "Expected reader to be positioned at PictureColorDepth"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.ReadAsPictureColorDepth() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetPictureColorDepth()
 
     member this.GetPictureNumberOfColors() =
-        if this._valueType <> FlacValue.PictureNumberOfColors then
+        if
+            this._valueType
+            <> FlacValue.PictureNumberOfColors
+        then
             flacEx "Expected reader to be positioned at PictureNumberOfColors"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.ReadAsPictureNumberOfColors() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetPictureNumberOfColors()
 
     member this.GetPictureDataLength() =
-        if this._valueType <> FlacValue.PictureDataLength then
+        if
+            this._valueType
+            <> FlacValue.PictureDataLength
+        then
             flacEx "Expected reader to be positioned at PictureDataLength"
 
         BinaryPrimitives.ReadUInt32BigEndian(this._value)
 
     member this.ReadAsPictureDataLength() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetPictureDataLength()
 
     member this.GetPictureData() =
-        if this._valueType <> FlacValue.PictureData then
+        if
+            this._valueType
+            <> FlacValue.PictureData
+        then
             flacEx "Expected reader to be positioned at PictureData"
 
         this._value
 
     member this.ReadAsPictureData() =
-        this.Read() |> ignore
+        this.Read()
+        |> ignore
+
         this.GetPictureData()

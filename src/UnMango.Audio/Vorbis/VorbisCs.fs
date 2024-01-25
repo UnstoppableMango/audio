@@ -17,4 +17,4 @@ let toComment =
     | Location v -> LocationComment(v)
     | Contact v -> ContactComment(v)
     | Isrc v -> IsrcComment(v)
-    | Other (n, v) -> OtherComment(n, v)
+    | Other(n, v) -> OtherComment(n, v)

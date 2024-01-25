@@ -43,7 +43,12 @@ let ToMetadataBlockSeekTableCs block =
 
 let ToMetadataBlockVorbisCommentCs block =
     let (MetadataBlockVorbisComment result) = block
-    let comments = result.UserComments |> List.map VorbisCs.toComment |> List.toSeq
+
+    let comments =
+        result.UserComments
+        |> List.map VorbisCs.toComment
+        |> List.toSeq
+
     MetadataBlockVorbisCommentCs(result.Vendor, comments)
 
 let ToCueSheetTrackCs track =
@@ -60,7 +65,8 @@ let ToMetadataBlockCueSheetCs block =
         block.LeadInSamples,
         block.IsCompactDisc,
         block.TotalTracks,
-        block.Tracks |> List.map ToCueSheetTrackCs
+        block.Tracks
+        |> List.map ToCueSheetTrackCs
     )
 
 let ToMetadataBlockPictureCs block =
@@ -88,40 +94,58 @@ let ToMetadataBlockDataCs =
     | Skipped x -> MetadataBlockSkippedCs(x)
 
 let ToMetadataBlockCs block =
-    MetadataBlockCs(block.Header, block.Data |> ToMetadataBlockDataCs)
+    MetadataBlockCs(
+        block.Header,
+        block.Data
+        |> ToMetadataBlockDataCs
+    )
 
 let ToFlacStreamCs stream =
-    FlacStreamCs(stream.Metadata |> List.map ToMetadataBlockCs)
+    FlacStreamCs(
+        stream.Metadata
+        |> List.map ToMetadataBlockCs
+    )
 
 let ReadMagic (r: byref<FlacStreamReader>) = Flac.readMagic &r
 
 let ReadMetadataBlockHeader (r: byref<FlacStreamReader>) = Flac.readMetadataBlockHeader &r
 
 let ReadMetadataBlockStreamInfo (r: byref<FlacStreamReader>) =
-    Flac.readMetadataBlockStreamInfo &r |> ToMetadataBlockStreamInfoCs
+    Flac.readMetadataBlockStreamInfo &r
+    |> ToMetadataBlockStreamInfoCs
 
 let ReadMetadataBlockPadding (r: byref<FlacStreamReader>) =
-    Flac.readMetadataBlockPadding &r |> ToMetadataBlockPaddingCs
+    Flac.readMetadataBlockPadding &r
+    |> ToMetadataBlockPaddingCs
 
 let ReadMetadataBlockApplication (r: byref<FlacStreamReader>) =
-    Flac.readMetadataBlockApplication &r |> ToMetadataBlockApplicationCs
+    Flac.readMetadataBlockApplication &r
+    |> ToMetadataBlockApplicationCs
 
 let ReadMetadataBlockSeekTable (r: byref<FlacStreamReader>) =
-    Flac.readMetadataBlockSeekTable &r |> ToMetadataBlockSeekTableCs
+    Flac.readMetadataBlockSeekTable &r
+    |> ToMetadataBlockSeekTableCs
 
 let ReadMetadataBlockVorbisComment (r: byref<FlacStreamReader>) =
-    Flac.readMetadataBlockVorbisComment &r |> ToMetadataBlockVorbisCommentCs
+    Flac.readMetadataBlockVorbisComment &r
+    |> ToMetadataBlockVorbisCommentCs
 
 let ReadMetadataBlockCueSheet (r: byref<FlacStreamReader>) =
-    Flac.readMetadataBlockCueSheet &r |> ToMetadataBlockCueSheetCs
+    Flac.readMetadataBlockCueSheet &r
+    |> ToMetadataBlockCueSheetCs
 
 let ReadMetadataBlockPicture (r: byref<FlacStreamReader>) =
-    Flac.readMetadataBlockPicture &r |> ToMetadataBlockPictureCs
+    Flac.readMetadataBlockPicture &r
+    |> ToMetadataBlockPictureCs
 
 let ReadMetadataBlockData (r: byref<FlacStreamReader>) (blockType: BlockType) =
-    Flac.readMetadataBlockData &r blockType |> ToMetadataBlockDataCs
+    Flac.readMetadataBlockData &r blockType
+    |> ToMetadataBlockDataCs
 
 let ReadMetadataBlock (r: byref<FlacStreamReader>) =
-    Flac.readMetadataBlock &r |> ToMetadataBlockCs
+    Flac.readMetadataBlock &r
+    |> ToMetadataBlockCs
 
-let ReadStream (r: byref<FlacStreamReader>) = Flac.readStream &r |> ToFlacStreamCs
+let ReadStream (r: byref<FlacStreamReader>) =
+    Flac.readStream &r
+    |> ToFlacStreamCs

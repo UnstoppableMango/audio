@@ -16,6 +16,10 @@ module internal Helpers =
 
             for i = 0 to num do
                 let s = num - i
-                sum <- sum + (uint buffer[i] <<< 8 * s)
+
+                sum <-
+                    sum
+                    + (uint buffer[i]
+                       <<< 8 * s)
 
             sum

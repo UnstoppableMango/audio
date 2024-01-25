@@ -14,7 +14,11 @@ module internal List =
         let cons h t = h :: t
 
         let initState = retn []
-        let folder h t = retn cons <*> (f h) <*> t
+
+        let folder h t =
+            retn cons
+            <*> (f h)
+            <*> t
 
         List.foldBack folder list initState
 
@@ -27,7 +31,10 @@ module internal List =
         let initState = retn []
 
         let folder head tail =
-            f head >>= (fun h -> tail >>= (fun t -> retn (cons h t)))
+            f head
+            >>= (fun h ->
+                tail
+                >>= (fun t -> retn (cons h t)))
 
         List.foldBack folder list initState
 

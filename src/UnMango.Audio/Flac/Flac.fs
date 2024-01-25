@@ -7,7 +7,10 @@ open UnMango.Audio
 open UnMango.Audio.Vorbis
 
 let readMagic (reader: byref<FlacStreamReader>) =
-    if reader.Read() && reader.Value.SequenceEqual("fLaC"B) then
+    if
+        reader.Read()
+        && reader.Value.SequenceEqual("fLaC"B)
+    then
         Encoding.ASCII.GetString(reader.Value)
     else
         flacEx "Invalid Flac stream"
@@ -20,18 +23,36 @@ let readMetadataBlockHeader (reader: byref<FlacStreamReader>) =
       Length = reader.ReadAsDataBlockLength() }
 
 let readMetadataBlockStreamInfo (reader: byref<FlacStreamReader>) =
-    { MinBlockSize = int <| reader.ReadAsMinimumBlockSize()
-      MaxBlockSize = int <| reader.ReadAsMaximumBlockSize()
-      MinFrameSize = int <| reader.ReadAsMinimumFrameSize()
-      MaxFrameSize = int <| reader.ReadAsMaximumFrameSize()
-      SampleRate = int <| reader.ReadAsSampleRate()
-      Channels = int <| reader.ReadAsChannels()
-      BitsPerSample = int <| reader.ReadAsBitsPerSample()
-      TotalSamples = int64 <| reader.ReadAsTotalSamples()
+    { MinBlockSize =
+        int
+        <| reader.ReadAsMinimumBlockSize()
+      MaxBlockSize =
+        int
+        <| reader.ReadAsMaximumBlockSize()
+      MinFrameSize =
+        int
+        <| reader.ReadAsMinimumFrameSize()
+      MaxFrameSize =
+        int
+        <| reader.ReadAsMaximumFrameSize()
+      SampleRate =
+        int
+        <| reader.ReadAsSampleRate()
+      Channels =
+        int
+        <| reader.ReadAsChannels()
+      BitsPerSample =
+        int
+        <| reader.ReadAsBitsPerSample()
+      TotalSamples =
+        int64
+        <| reader.ReadAsTotalSamples()
       Md5Signature = reader.ReadAsMd5Signature() }
 
 let readMetadataBlockPadding (reader: byref<FlacStreamReader>) =
-    reader.Read() |> ignore
+    reader.Read()
+    |> ignore
+
     MetadataBlockPadding reader.Value.Length
 
 let readMetadataBlockApplication (reader: byref<FlacStreamReader>) =
@@ -39,22 +60,35 @@ let readMetadataBlockApplication (reader: byref<FlacStreamReader>) =
       ApplicationData = flacEx "TODO" }
 
 let readSeekPoint (reader: byref<FlacStreamReader>) =
-    {| SampleNumber = int64 <| reader.ReadAsSeekPointSampleNumber()
-       StreamOffset = int64 <| reader.ReadAsSeekPointOffset()
-       FrameSamples = int <| reader.ReadAsSeekPointNumberOfSamples() |}
+    {| SampleNumber =
+        int64
+        <| reader.ReadAsSeekPointSampleNumber()
+       StreamOffset =
+        int64
+        <| reader.ReadAsSeekPointOffset()
+       FrameSamples =
+        int
+        <| reader.ReadAsSeekPointNumberOfSamples() |}
     |> SeekPoint // TODO: Placeholder seek point
 
 let readMetadataBlockSeekTable (reader: byref<FlacStreamReader>) =
     let mutable seekPoints = List.empty
 
-    while reader.NextValue <> FlacValue.LastMetadataBlockFlag do
-        seekPoints <- (readSeekPoint &reader) :: seekPoints
+    while reader.NextValue
+          <> FlacValue.LastMetadataBlockFlag do
+        seekPoints <-
+            (readSeekPoint &reader)
+            :: seekPoints
 
     // TODO: Can we not cons/rev?
-    { Points = seekPoints |> List.rev }
+    { Points =
+        seekPoints
+        |> List.rev }
 
 let readVorbisComment (reader: byref<FlacStreamReader>) =
-    reader.ReadAsUserCommentLength() |> ignore
+    reader.ReadAsUserCommentLength()
+    |> ignore
+
     let comment = reader.ReadAsUserComment()
 
     match Vorbis.toComment comment with
@@ -64,12 +98,19 @@ let readVorbisComment (reader: byref<FlacStreamReader>) =
 let readMetadataBlockVorbisComment (reader: byref<FlacStreamReader>) =
     let mutable comments = List.empty
 
-    reader.ReadAsVendorLength() |> ignore
-    let vendor = reader.ReadAsVendorString()
-    reader.ReadAsUserCommentListLength() |> ignore
+    reader.ReadAsVendorLength()
+    |> ignore
 
-    while reader.NextValue <> FlacValue.LastMetadataBlockFlag do
-        comments <- (readVorbisComment &reader) :: comments
+    let vendor = reader.ReadAsVendorString()
+
+    reader.ReadAsUserCommentListLength()
+    |> ignore
+
+    while reader.NextValue
+          <> FlacValue.LastMetadataBlockFlag do
+        comments <-
+            (readVorbisComment &reader)
+            :: comments
 
     // TODO: Can we not cons/rev?
     { Vendor = vendor
@@ -81,7 +122,12 @@ let readCueSheetTrackIndex (f: ReadOnlySpan<byte>) =
     let offset = BinaryPrimitives.ReadUInt64BigEndian(f.Slice(0, 8))
     let indexPoint = uint16 f[8]
 
-    if f.Slice(9, 3 * 8).IndexOfAnyExcept(0uy) <> -1 then
+    if
+        f
+            .Slice(9, 3 * 8)
+            .IndexOfAnyExcept(0uy)
+        <> -1
+    then
         flacEx "Non-zero bit found in reserved block"
 
     { Offset = int64 offset
@@ -97,10 +143,18 @@ let readCueSheetTrack (f: ReadOnlySpan<byte>) =
 
     let apb = f[offset]
     let isAudio = (apb &&& 0x80uy) = 0uy
-    let preEmphasis = (apb &&& 0x40uy) <> 0uy
+
+    let preEmphasis =
+        (apb &&& 0x40uy)
+        <> 0uy
 
     // Skip 6 + 13 * 8
-    if f.Slice(offset, 13 * 8).IndexOfAnyExcept(0uy) <> -1 then
+    if
+        f
+            .Slice(offset, 13 * 8)
+            .IndexOfAnyExcept(0uy)
+        <> -1
+    then
         flacEx "Non-zero bit found in reserved block"
 
     offset <- offset + (13 * 8)
@@ -109,7 +163,10 @@ let readCueSheetTrack (f: ReadOnlySpan<byte>) =
 
     // TODO
     let ctis =
-        if trackNumber = 170us || trackNumber = 255us then
+        if
+            trackNumber = 170us
+            || trackNumber = 255us
+        then
             List.empty
         else
             List.empty
@@ -133,16 +190,41 @@ let readMetadataBlockCueSheet (reader: byref<FlacStreamReader>) =
 
 let readMetadataBlockPicture (reader: byref<FlacStreamReader>) =
     let pictureType = reader.ReadAsPictureType()
-    reader.ReadAsMimeTypeLength() |> ignore
+
+    reader.ReadAsMimeTypeLength()
+    |> ignore
+
     let mimeType = reader.ReadAsMimeType()
-    reader.ReadAsPictureDescriptionLength() |> ignore
+
+    reader.ReadAsPictureDescriptionLength()
+    |> ignore
+
     let description = reader.ReadAsPictureDescription()
-    let width = int <| reader.ReadAsPictureWidth()
-    let height = int <| reader.ReadAsPictureHeight()
-    let depth = int <| reader.ReadAsPictureColorDepth()
-    let colors = int <| reader.ReadAsPictureNumberOfColors()
-    let dataLength = int <| reader.ReadAsPictureDataLength()
-    let data = reader.ReadAsPictureData().ToArray()
+
+    let width =
+        int
+        <| reader.ReadAsPictureWidth()
+
+    let height =
+        int
+        <| reader.ReadAsPictureHeight()
+
+    let depth =
+        int
+        <| reader.ReadAsPictureColorDepth()
+
+    let colors =
+        int
+        <| reader.ReadAsPictureNumberOfColors()
+
+    let dataLength =
+        int
+        <| reader.ReadAsPictureDataLength()
+
+    let data =
+        reader
+            .ReadAsPictureData()
+            .ToArray()
 
     { Type = pictureType
       MimeType = mimeType
@@ -172,15 +254,23 @@ let readMetadataBlock (reader: byref<FlacStreamReader>) =
     { Header = header; Data = data }
 
 let readStream (reader: byref<FlacStreamReader>) =
-    readMagic &reader |> ignore
+    readMagic &reader
+    |> ignore
+
     let streamInfo = readMetadataBlock &reader
 
-    if streamInfo.Header.BlockType <> BlockType.StreamInfo then
+    if
+        streamInfo.Header.BlockType
+        <> BlockType.StreamInfo
+    then
         flacEx "Stream info must be the first block"
 
     let mutable metadata = [ streamInfo ]
 
-    while reader.NextValue <> FlacValue.None do
-        metadata <- (readMetadataBlock &reader) :: metadata
+    while reader.NextValue
+          <> FlacValue.None do
+        metadata <-
+            (readMetadataBlock &reader)
+            :: metadata
 
     { Metadata = metadata |> List.rev }

@@ -9,14 +9,8 @@ type SeekPointCs =
       FrameSamples: int }
 
 type CueSheetTrackCs
-    (
-        offset: int64,
-        number: int16,
-        isrc: string,
-        isAudio: bool,
-        preEmphasis: bool,
-        indexPoints: CueSheetTrackIndex seq
-    ) =
+    (offset: int64, number: int16, isrc: string, isAudio: bool, preEmphasis: bool, indexPoints: CueSheetTrackIndex seq)
+    =
     member this.Offset = offset
     member this.Number = number
     member this.Isrc = isrc
@@ -71,13 +65,7 @@ type MetadataBlockVorbisCommentCs(vendor: string, userComments: VorbisCommentCs 
     member this.UserComments = userComments
 
 type MetadataBlockCueSheetCs
-    (
-        catalogNumber: string,
-        leadInSamples: int64,
-        isCompactDisc: bool,
-        totalTracks: int,
-        tracks: CueSheetTrackCs seq
-    ) =
+    (catalogNumber: string, leadInSamples: int64, isCompactDisc: bool, totalTracks: int, tracks: CueSheetTrackCs seq) =
     inherit MetadataBlockDataCs()
     member this.CatalogNumber = catalogNumber
     member this.LeadInSamples = leadInSamples

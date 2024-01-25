@@ -13,38 +13,55 @@ let ``When uninitialized is FlacValue.Marker`` () =
 
 [<Fact>]
 let ``When at FlacValue.None is FlacValue.Marker`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.None }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.None }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.Marker, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.Marker is FlacValue.LastMetadataBlockFlag`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.Marker }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.Marker }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.LastMetadataBlockFlag, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.LastMetadataBlockFlag is FlacValue.MetadataBlockType`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.LastMetadataBlockFlag }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.LastMetadataBlockFlag }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.MetadataBlockType, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.MetadataBlockType is FlacValue.DataBlockLength`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.MetadataBlockType }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.MetadataBlockType }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.DataBlockLength, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.DataBlockLength but no block type throws exception`` () =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Position = FlacValue.DataBlockLength }
+    Assert.Throws<FlacStreamReaderException>(fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Position = FlacValue.DataBlockLength }
+
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)
 
 [<Fact>]
 let ``When at FlacValue.DataBlockLength and BlockType.StreamInfo is FlacValue.MinimumBlockSize`` () =
@@ -136,66 +153,95 @@ let ``When at FlacValue.DataBlockLength and unknown block type is FlacValue.Meta
 
 [<Fact>]
 let ``When at FlacValue.MinimumBlockSize is FlacValue.MaximumBlockSize`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.MinimumBlockSize }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.MinimumBlockSize }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.MaximumBlockSize, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.MaximumBlockSize is FlacValue.MinimumFrameSize`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.MaximumBlockSize }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.MaximumBlockSize }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.MinimumFrameSize, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.MinimumFrameSize is FlacValue.MaximumFrameSize`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.MinimumFrameSize }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.MinimumFrameSize }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.MaximumFrameSize, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.MaximumFrameSize is FlacValue.StreamInfoSampleRate`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.MaximumFrameSize }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.MaximumFrameSize }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.StreamInfoSampleRate, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.StreamInfoSampleRate is FlacValue.NumberOfChannels`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.StreamInfoSampleRate }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.StreamInfoSampleRate }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.NumberOfChannels, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.NumberOfChannels is FlacValue.BitsPerSample`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.NumberOfChannels }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.NumberOfChannels }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.BitsPerSample, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.BitsPerSample is FlacValue.TotalSamples`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.BitsPerSample }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.BitsPerSample }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.TotalSamples, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.TotalSamples is FlacValue.Md5Signature`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.TotalSamples }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.TotalSamples }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.Md5Signature, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.Md5Signature and unknown last metadata block flag throws exception`` () =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Position = FlacValue.Md5Signature }
+    Assert.Throws<FlacStreamReaderException>(fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Position = FlacValue.Md5Signature }
+
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)
 
 [<Fact>]
 let ``When at FlacValue.Md5Signature and not last metadata block is FlacValue.LastMetadataBlockFlag`` () =
@@ -221,10 +267,15 @@ let ``When at FlacValue.Md5Signature and last metadata block is FlacValue.None``
 
 [<Fact>]
 let ``When at FlacValue.Padding and unknown last metadata block flag throws exception`` () =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Position = FlacValue.Padding }
+    Assert.Throws<FlacStreamReaderException>(fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Position = FlacValue.Padding }
+
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)
 
 [<Fact>]
 let ``When at FlacValue.Padding and not last metadata block is FlacValue.LastMetadataBlockFlag`` () =
@@ -250,17 +301,25 @@ let ``When at FlacValue.Padding and last metadata block is FlacValue.None`` () =
 
 [<Fact>]
 let ``When at FlacValue.ApplicationId is FlacValue.ApplicationData`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.ApplicationId }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.ApplicationId }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.ApplicationData, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.ApplicationData and unknown last metadata block flag throws exception`` () =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Position = FlacValue.ApplicationData }
+    Assert.Throws<FlacStreamReaderException>(fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Position = FlacValue.ApplicationData }
+
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)
 
 [<Fact>]
 let ``When at FlacValue.ApplicationData and not last metadata block is FlacValue.LastMetadataBlockFlag`` () =
@@ -286,14 +345,20 @@ let ``When at FlacValue.ApplicationData and last metadata block is FlacValue.Non
 
 [<Fact>]
 let ``When at FlacValue.SeekPointSampleNumber is FlacValue.SeekPointOffset`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.SeekPointSampleNumber }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.SeekPointSampleNumber }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.SeekPointOffset, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.SeekPointOffset is FlacValue.NumberOfSamples`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.SeekPointOffset }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.SeekPointOffset }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.NumberOfSamples, reader.NextValue)
@@ -310,7 +375,7 @@ let numberOfSamplesInvalidStateTestData: obj array seq =
 [<Theory>]
 [<MemberData(nameof numberOfSamplesInvalidStateTestData)>]
 let ``When at FlacValue.NumberOfSamples and invalid state throws exception`` count offset =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
+    Assert.Throws<FlacStreamReaderException>(fun () ->
         let state =
             { FlacStreamState.Empty with
                 Position = FlacValue.NumberOfSamples
@@ -318,7 +383,9 @@ let ``When at FlacValue.NumberOfSamples and invalid state throws exception`` cou
                 SeekPointOffset = offset }
 
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)
 
 [<Fact>]
 let ``When at FlacValue.NumberOfSamples and offset is less than count is FlacValue.SeekPointSampleNumber`` () =
@@ -336,7 +403,7 @@ let ``When at FlacValue.NumberOfSamples and offset is less than count is FlacVal
 let ``When at FlacValue.NumberOfSamples and offset is equal to count and unknown last metadata block flag throws exception``
     ()
     =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
+    Assert.Throws<FlacStreamReaderException>(fun () ->
         let state =
             { FlacStreamState.Empty with
                 Position = FlacValue.NumberOfSamples
@@ -344,7 +411,9 @@ let ``When at FlacValue.NumberOfSamples and offset is equal to count and unknown
                 SeekPointOffset = ValueSome 69u }
 
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)
 
 [<Fact>]
 let ``When at FlacValue.NumberOfSamples and offset is equal to count and not last metadata block is FlacValue.LastMetadataBlockFlag``
@@ -376,28 +445,40 @@ let ``When at FlacValue.NumberOfSamples and offset is equal to count and last me
 
 [<Fact>]
 let ``When at FlacValue.VendorLength is FlacValue.VendorString`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.VendorLength }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.VendorLength }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.VendorString, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.VendorString is FlacValue.UserCommentListLength`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.VendorString }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.VendorString }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.UserCommentListLength, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.UserCommentListLength is FlacValue.UserCommentLength`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.UserCommentListLength }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.UserCommentListLength }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.UserCommentLength, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.UserCommentLength is FlacValue.UserComment`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.UserCommentLength }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.UserCommentLength }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.UserComment, reader.NextValue)
@@ -414,7 +495,7 @@ let userCommentInvalidStateTestData: obj array seq =
 [<Theory>]
 [<MemberData(nameof userCommentInvalidStateTestData)>]
 let ``When at FlacValue.UserComment and invalid state throws exception`` count offset =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
+    Assert.Throws<FlacStreamReaderException>(fun () ->
         let state =
             { FlacStreamState.Empty with
                 Position = FlacValue.UserComment
@@ -422,7 +503,9 @@ let ``When at FlacValue.UserComment and invalid state throws exception`` count o
                 UserCommentOffset = offset }
 
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)
 
 [<Fact>]
 let ``When at FlacValue.UserComment and offset is less than count is FlacValue.SeekPointSampleNumber`` () =
@@ -440,7 +523,7 @@ let ``When at FlacValue.UserComment and offset is less than count is FlacValue.S
 let ``When at FlacValue.UserComment and offset is equal to count and unknown last metadata block flag throws exception``
     ()
     =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
+    Assert.Throws<FlacStreamReaderException>(fun () ->
         let state =
             { FlacStreamState.Empty with
                 Position = FlacValue.UserComment
@@ -448,7 +531,9 @@ let ``When at FlacValue.UserComment and offset is equal to count and unknown las
                 UserCommentOffset = ValueSome 69u }
 
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)
 
 [<Fact>]
 let ``When at FlacValue.UserComment and offset is equal to count and not last metadata block is FlacValue.LastMetadataBlockFlag``
@@ -480,77 +565,110 @@ let ``When at FlacValue.UserComment and offset is equal to count and last metada
 
 [<Fact>]
 let ``When at FlacValue.MediaCatalogNumber is FlacValue.NumberOfLeadInSamples`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.MediaCatalogNumber }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.MediaCatalogNumber }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.NumberOfLeadInSamples, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.NumberOfLeadInSamples is FlacValue.IsCueSheetCompactDisc`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.NumberOfLeadInSamples }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.NumberOfLeadInSamples }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.IsCueSheetCompactDisc, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.IsCueSheetCompactDisc is FlacValue.CueSheetReserved`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.IsCueSheetCompactDisc }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.IsCueSheetCompactDisc }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.CueSheetReserved, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.CueSheetReserved is FlacValue.NumberOfTracks`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.CueSheetReserved }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.CueSheetReserved }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.NumberOfTracks, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.NumberOfTracks is FlacValue.TrackOffset`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.NumberOfTracks }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.NumberOfTracks }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.TrackOffset, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.TrackOffset is FlacValue.TrackNumber`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.TrackOffset }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.TrackOffset }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.TrackNumber, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.TrackNumber is FlacValue.TrackIsrc`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.TrackNumber }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.TrackNumber }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.TrackIsrc, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.TrackIsrc is FlacValue.TrackType`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.TrackIsrc }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.TrackIsrc }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.TrackType, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.TrackType is FlacValue.PreEmphasis`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.TrackType }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.TrackType }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.PreEmphasis, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.PreEmphasis is FlacValue.TrackReserved`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.PreEmphasis }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.PreEmphasis }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.TrackReserved, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.TrackReserved is FlacValue.NumberOfTrackIndexPoints`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.TrackReserved }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.TrackReserved }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.NumberOfTrackIndexPoints, reader.NextValue)
@@ -558,7 +676,8 @@ let ``When at FlacValue.TrackReserved is FlacValue.NumberOfTrackIndexPoints`` ()
 [<Fact>]
 let ``When at FlacValue.NumberOfTrackIndexPoints is FlacValue.TrackIndexOffset`` () =
     let state =
-        { FlacStreamState.Empty with Position = FlacValue.NumberOfTrackIndexPoints }
+        { FlacStreamState.Empty with
+            Position = FlacValue.NumberOfTrackIndexPoints }
 
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
@@ -566,35 +685,72 @@ let ``When at FlacValue.NumberOfTrackIndexPoints is FlacValue.TrackIndexOffset``
 
 [<Fact>]
 let ``When at FlacValue.TrackIndexOffset is FlacValue.IndexPointNumber`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.TrackIndexOffset }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.TrackIndexOffset }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.IndexPointNumber, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.IndexPointNumber is FlacValue.TrackIndexReserved`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.IndexPointNumber }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.IndexPointNumber }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.TrackIndexReserved, reader.NextValue)
 
 let trackIndexReservedInvalidStateTestData: obj array seq =
     seq {
-        [| ValueNone; ValueNone; ValueNone; ValueNone |]
-        [| ValueSome 69; ValueNone; ValueNone; ValueNone |]
-        [| ValueNone; ValueSome 69; ValueNone; ValueNone |]
-        [| ValueSome 69; ValueSome 420; ValueNone; ValueNone |]
-        [| ValueSome 69; ValueSome 69; ValueNone; ValueNone |]
-        [| ValueSome 69; ValueSome 69; ValueSome 69; ValueNone |]
-        [| ValueSome 69; ValueSome 69; ValueNone; ValueSome 69 |]
-        [| ValueSome 69; ValueSome 69; ValueSome 69; ValueSome 420 |]
+        [| ValueNone
+           ValueNone
+           ValueNone
+           ValueNone |]
+
+        [| ValueSome 69
+           ValueNone
+           ValueNone
+           ValueNone |]
+
+        [| ValueNone
+           ValueSome 69
+           ValueNone
+           ValueNone |]
+
+        [| ValueSome 69
+           ValueSome 420
+           ValueNone
+           ValueNone |]
+
+        [| ValueSome 69
+           ValueSome 69
+           ValueNone
+           ValueNone |]
+
+        [| ValueSome 69
+           ValueSome 69
+           ValueSome 69
+           ValueNone |]
+
+        [| ValueSome 69
+           ValueSome 69
+           ValueNone
+           ValueSome 69 |]
+
+        [| ValueSome 69
+           ValueSome 69
+           ValueSome 69
+           ValueSome 420 |]
     }
     |> Seq.map (Array.map box)
 
 [<Theory>]
 [<MemberData(nameof trackIndexReservedInvalidStateTestData)>]
 let ``When at FlacValue.TrackIndexReserved and invalid state throws exception`` indexCount indexOffset count offset =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
+    Assert.Throws<FlacStreamReaderException>(fun () ->
         let state =
             { FlacStreamState.Empty with
                 Position = FlacValue.TrackIndexReserved
@@ -604,7 +760,9 @@ let ``When at FlacValue.TrackIndexReserved and invalid state throws exception`` 
                 CueSheetTrackOffset = offset }
 
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)
 
 [<Fact>]
 let ``When at FlacValue.TrackIndexReserved and offset is less than count is FlacValue.TrackIndexOffset`` () =
@@ -638,7 +796,7 @@ let ``When at FlacValue.TrackIndexReserved and index offset is equal to index co
 let ``When at FlacValue.TrackIndexReserved and index offset is equal to index count and offset is equal to count and unknown last metadata block flag throws exception``
     ()
     =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
+    Assert.Throws<FlacStreamReaderException>(fun () ->
         let state =
             { FlacStreamState.Empty with
                 Position = FlacValue.TrackIndexReserved
@@ -648,7 +806,9 @@ let ``When at FlacValue.TrackIndexReserved and index offset is equal to index co
                 CueSheetTrackOffset = ValueSome 69 }
 
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)
 
 [<Fact>]
 let ``When at FlacValue.TrackIndexReserved and index offset is equal to index count and offset equal to count and not last block is FlacValue.LastMetadataBlockFlag``
@@ -686,80 +846,115 @@ let ``When at FlacValue.TrackIndexReserved and index offset is equal to index co
 
 [<Fact>]
 let ``When at FlacValue.PictureType is FlacValue.MimeTypeLength`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.PictureType }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.PictureType }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.MimeTypeLength, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.MimeTypeLength is FlacValue.MimeType`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.MimeTypeLength }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.MimeTypeLength }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.MimeType, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.MimeType is FlacValue.PictureDescriptionLength`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.MimeType }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.MimeType }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.PictureDescriptionLength, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.PictureDescriptionLength is FlacValue.PictureDescription`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.PictureDescriptionLength }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.PictureDescriptionLength }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.PictureDescription, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.PictureDescription is FlacValue.PictureWidth`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.PictureDescription }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.PictureDescription }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.PictureWidth, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.PictureWidth is FlacValue.PictureHeight`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.PictureWidth }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.PictureWidth }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.PictureHeight, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.PictureHeight is FlacValue.PictureColorDepth`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.PictureHeight }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.PictureHeight }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.PictureColorDepth, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.PictureColorDepth is FlacValue.PictureNumberOfColors`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.PictureColorDepth }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.PictureColorDepth }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.PictureNumberOfColors, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.PictureNumberOfColors is FlacValue.PictureDataLength`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.PictureNumberOfColors }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.PictureNumberOfColors }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.PictureDataLength, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.PictureDataLength is FlacValue.PictureData`` () =
-    let state = { FlacStreamState.Empty with Position = FlacValue.PictureDataLength }
+    let state =
+        { FlacStreamState.Empty with
+            Position = FlacValue.PictureDataLength }
+
     let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
 
     Assert.Equal(FlacValue.PictureData, reader.NextValue)
 
 [<Fact>]
 let ``When at FlacValue.PictureData and unknown last metadata block flag throws exception`` () =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Position = FlacValue.PictureData }
+    Assert.Throws<FlacStreamReaderException>(fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Position = FlacValue.PictureData }
+
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)
 
 [<Fact>]
 let ``When at FlacValue.PictureData and not last metadata block is FlacValue.LastMetadataBlockFlag`` () =
@@ -785,7 +980,12 @@ let ``When at FlacValue.PictureData and last metadata block is FlacValue.None`` 
 
 [<Fact>]
 let ``When at unknown FlacValue throws exception`` () =
-    Assert.Throws<FlacStreamReaderException> (fun () ->
-        let state = { FlacStreamState.Empty with Position = (enum<FlacValue> 420) }
+    Assert.Throws<FlacStreamReaderException>(fun () ->
+        let state =
+            { FlacStreamState.Empty with
+                Position = (enum<FlacValue> 420) }
+
         let reader = FlacStreamReader(ReadOnlySpan<byte>.Empty, state)
-        reader.NextValue |> ignore)
+
+        reader.NextValue
+        |> ignore)

@@ -35,7 +35,9 @@ type FlacStreamState =
           Position = FlacValue.None
           Value = Array.Empty<byte>() }
 
-    static member StreamInfoHeader = { FlacStreamState.Empty with Position = FlacValue.Marker }
+    static member StreamInfoHeader =
+        { FlacStreamState.Empty with
+            Position = FlacValue.Marker }
 
     static member After(position: FlacValue) =
         match position with // TODO: Throw on positions that require more state
@@ -57,7 +59,8 @@ type FlacStreamState =
         FlacStreamState.AfterBlockHeader(lastBlock, length, blockType, FlacStreamState.Empty)
 
     static member AfterBlockData(lastBlock: bool, state: FlacStreamState) =
-        { state with LastMetadataBlock = ValueSome lastBlock }
+        { state with
+            LastMetadataBlock = ValueSome lastBlock }
 
     static member AfterBlockData(lastBlock: bool) =
         let state =
