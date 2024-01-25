@@ -13,4 +13,9 @@
   <ItemGroup>
     <ProjectReference Include="../../src/UnMango.Audio/UnMango.Audio.fsproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="NEFFEX-Flirt.flac" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="NEFFEX-Flirt.mp3" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

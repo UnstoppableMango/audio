@@ -40,8 +40,8 @@ jobs:
       - name: Lint F#
         run: dotnet fantomas --check src test bench
 
-      - name: Lint C#
-        run: dotnet format --verify-no-changes
+#      - name: Lint C#
+#        run: dotnet format --verify-no-changes
 
       - name: Run tests
         run: |

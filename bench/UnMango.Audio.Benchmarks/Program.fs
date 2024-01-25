@@ -1,3 +1,14 @@
-module Program =
-    [<EntryPoint>]
-    let main _ = 0
+﻿open BenchmarkDotNet.Running
+
+type Marker =
+    class
+    end
+
+[<EntryPoint>]
+let main argv =
+    BenchmarkSwitcher
+        .FromAssembly(typeof<Marker>.Assembly)
+        .Run(argv)
+    |> ignore
+
+    0
