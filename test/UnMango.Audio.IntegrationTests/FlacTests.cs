@@ -21,7 +21,8 @@ public class FlacTests
     [Fact]
     public void MagicNumber_Mp3File()
     {
-        Assert.Throws<FlacStreamReaderException>(() => {
+        Assert.Throws<FlacStreamReaderException>(() =>
+        {
             ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.mp3");
             var reader = new FlacStreamReader(file);
 

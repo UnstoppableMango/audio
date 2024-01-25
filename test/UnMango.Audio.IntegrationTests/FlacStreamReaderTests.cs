@@ -36,7 +36,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 2)) {
+        foreach (var _ in Enumerable.Range(0, 2))
+        {
             reader.Read();
         }
 
@@ -50,7 +51,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 3)) {
+        foreach (var _ in Enumerable.Range(0, 3))
+        {
             reader.Read();
         }
 
@@ -64,7 +66,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 4)) {
+        foreach (var _ in Enumerable.Range(0, 4))
+        {
             reader.Read();
         }
 
@@ -78,7 +81,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 5)) {
+        foreach (var _ in Enumerable.Range(0, 5))
+        {
             reader.Read();
         }
 
@@ -92,7 +96,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 6)) {
+        foreach (var _ in Enumerable.Range(0, 6))
+        {
             reader.Read();
         }
 
@@ -106,7 +111,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 7)) {
+        foreach (var _ in Enumerable.Range(0, 7))
+        {
             reader.Read();
         }
 
@@ -120,7 +126,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 8)) {
+        foreach (var _ in Enumerable.Range(0, 8))
+        {
             reader.Read();
         }
 
@@ -134,7 +141,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 9)) {
+        foreach (var _ in Enumerable.Range(0, 9))
+        {
             reader.Read();
         }
 
@@ -148,7 +156,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 10)) {
+        foreach (var _ in Enumerable.Range(0, 10))
+        {
             reader.Read();
         }
 
@@ -162,7 +171,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 11)) {
+        foreach (var _ in Enumerable.Range(0, 11))
+        {
             reader.Read();
         }
 
@@ -176,7 +186,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 12)) {
+        foreach (var _ in Enumerable.Range(0, 12))
+        {
             reader.Read();
         }
 
@@ -190,7 +201,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 13)) {
+        foreach (var _ in Enumerable.Range(0, 13))
+        {
             reader.Read();
         }
 
@@ -204,7 +216,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 14)) {
+        foreach (var _ in Enumerable.Range(0, 14))
+        {
             reader.Read();
         }
 
@@ -218,7 +231,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 15)) {
+        foreach (var _ in Enumerable.Range(0, 15))
+        {
             reader.Read();
         }
 
@@ -232,7 +246,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 16)) {
+        foreach (var _ in Enumerable.Range(0, 16))
+        {
             reader.Read();
         }
 
@@ -246,7 +261,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 17)) {
+        foreach (var _ in Enumerable.Range(0, 17))
+        {
             reader.Read();
         }
 
@@ -264,7 +280,8 @@ public class FlacStreamReaderTests
         Assert.Equal(4096u, reader.GetSeekPointNumberOfSamples());
 
         // 14 seek points until the end, 3 blocks each, +1 to advance into the final seek point
-        foreach (var _ in Enumerable.Range(0, 14 * 3 + 1)) {
+        foreach (var _ in Enumerable.Range(0, 14 * 3 + 1))
+        {
             reader.Read();
         }
 
@@ -288,7 +305,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 65)) {
+        foreach (var _ in Enumerable.Range(0, 65))
+        {
             reader.Read();
         }
 
@@ -302,7 +320,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 66)) {
+        foreach (var _ in Enumerable.Range(0, 66))
+        {
             reader.Read();
         }
 
@@ -316,7 +335,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 67)) {
+        foreach (var _ in Enumerable.Range(0, 67))
+        {
             reader.Read();
         }
 
@@ -330,7 +350,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 68)) {
+        foreach (var _ in Enumerable.Range(0, 68))
+        {
             reader.Read();
         }
 
@@ -344,7 +365,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 69)) {
+        foreach (var _ in Enumerable.Range(0, 69))
+        {
             reader.Read();
         }
 
@@ -358,7 +380,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 70)) {
+        foreach (var _ in Enumerable.Range(0, 70))
+        {
             reader.Read();
         }
 
@@ -372,7 +395,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 71)) {
+        foreach (var _ in Enumerable.Range(0, 71))
+        {
             reader.Read();
         }
 
@@ -385,7 +409,8 @@ public class FlacStreamReaderTests
         Assert.Equal("TITLE=Flirt", reader.GetUserComment());
 
         // 12 comments until the end, 2 blocks each, +1 to advance into the final comment
-        foreach (var _ in Enumerable.Range(0, 12 * 2 + 1)) {
+        foreach (var _ in Enumerable.Range(0, 12 * 2 + 1))
+        {
             reader.Read();
         }
 
@@ -404,7 +429,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 99)) {
+        foreach (var _ in Enumerable.Range(0, 99))
+        {
             reader.Read();
         }
 
@@ -418,7 +444,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 100)) {
+        foreach (var _ in Enumerable.Range(0, 100))
+        {
             reader.Read();
         }
 
@@ -432,7 +459,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 101)) {
+        foreach (var _ in Enumerable.Range(0, 101))
+        {
             reader.Read();
         }
 
@@ -446,7 +474,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 102)) {
+        foreach (var _ in Enumerable.Range(0, 102))
+        {
             reader.Read();
         }
 
@@ -460,7 +489,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 103)) {
+        foreach (var _ in Enumerable.Range(0, 103))
+        {
             reader.Read();
         }
 
@@ -474,7 +504,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 104)) {
+        foreach (var _ in Enumerable.Range(0, 104))
+        {
             reader.Read();
         }
 
@@ -488,7 +519,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 105)) {
+        foreach (var _ in Enumerable.Range(0, 105))
+        {
             reader.Read();
         }
 
@@ -502,7 +534,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 106)) {
+        foreach (var _ in Enumerable.Range(0, 106))
+        {
             reader.Read();
         }
 
@@ -516,7 +549,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 107)) {
+        foreach (var _ in Enumerable.Range(0, 107))
+        {
             reader.Read();
         }
 
@@ -530,7 +564,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 108)) {
+        foreach (var _ in Enumerable.Range(0, 108))
+        {
             reader.Read();
         }
 
@@ -544,7 +579,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 109)) {
+        foreach (var _ in Enumerable.Range(0, 109))
+        {
             reader.Read();
         }
 
@@ -558,7 +594,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 110)) {
+        foreach (var _ in Enumerable.Range(0, 110))
+        {
             reader.Read();
         }
 
@@ -572,7 +609,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 111)) {
+        foreach (var _ in Enumerable.Range(0, 111))
+        {
             reader.Read();
         }
 
@@ -586,7 +624,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 112)) {
+        foreach (var _ in Enumerable.Range(0, 112))
+        {
             reader.Read();
         }
 
@@ -600,7 +639,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 113)) {
+        foreach (var _ in Enumerable.Range(0, 113))
+        {
             reader.Read();
         }
 
@@ -614,7 +654,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 114)) {
+        foreach (var _ in Enumerable.Range(0, 114))
+        {
             reader.Read();
         }
 
@@ -628,7 +669,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 115)) {
+        foreach (var _ in Enumerable.Range(0, 115))
+        {
             reader.Read();
         }
 
@@ -642,7 +684,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 116)) {
+        foreach (var _ in Enumerable.Range(0, 116))
+        {
             reader.Read();
         }
 
@@ -656,7 +699,8 @@ public class FlacStreamReaderTests
         ReadOnlySpan<byte> file = File.ReadAllBytes($"{FileName}.flac");
         var reader = new FlacStreamReader(file);
 
-        foreach (var _ in Enumerable.Range(0, 117)) {
+        foreach (var _ in Enumerable.Range(0, 117))
+        {
             reader.Read();
         }
 
