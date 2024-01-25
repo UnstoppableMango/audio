@@ -38,7 +38,7 @@ jobs:
         run: dotnet build --no-restore
 
       - name: Lint F#
-        run: dotnet fantomas --check --recurse src test bench
+        run: dotnet fantomas --check src test bench
 
       - name: Lint C#
         run: dotnet format --verify-no-changes
@@ -55,5 +55,3 @@ jobs:
         with:
           directory: coverage
           files: '**/coverage.cobertura.xml'
-
-
