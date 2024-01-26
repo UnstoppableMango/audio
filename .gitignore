@@ -480,3 +480,4 @@ fabric.properties
 ## Covers any ad-hoc directories that should be ignored
 
 coverage/
+.idea/**/discord.xml
