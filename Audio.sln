@@ -37,6 +37,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{0AFC06D6-5
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "config", "config", "{DB303237-4457-4796-B5F7-55CB895F36F7}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		.git-blame-ignore-revs = .git-blame-ignore-revs
+		.gitignore = .gitignore
+		codecov.yml = codecov.yml
+	EndProjectSection
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "UnMango.Audio.Flac", "src\UnMango.Audio.Flac\UnMango.Audio.Flac.fsproj", "{930B2DFB-D4A1-4D53-9B3C-A782258EC06A}"
 EndProject
