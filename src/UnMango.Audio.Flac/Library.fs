@@ -2,6 +2,19 @@
 
 open System.Buffers
 open System.IO.Pipelines
+open System.Runtime.CompilerServices
+open System.Threading
+
+[<Struct; IsReadOnly>]
+type ValueResult<'a> =
+    | Ok of value: 'a
+    | Error of string
+
+module ValueResult =
+    let map (f: 'a -> 'b) =
+        function
+        | Ok value -> Ok(f value)
+        | Error e -> Error e
 
 type BlockType =
     | StreamInfo = 0
@@ -127,30 +140,35 @@ type FlacValue =
     | MetadataBlockData of data: MetadataBlockData
 
 [<Struct>]
-type State =
+type ParseState =
+    | Initial
     | Magic
-    | Todo
 
-type ParseResult = (struct (ReadOnlySequence<byte> * FlacValue))
-type Parse = ReadOnlySequence<byte> -> ParseResult
+type ParseResult = (struct (ReadOnlySequence<byte> * FlacValue * ParseState))
+type Parse = ReadOnlySequence<byte> -> ParseState -> ValueResult<ParseResult>
 type Handle = FlacValue -> Async<unit>
 
 module Flac =
-    let parse (buffer: ReadOnlySequence<byte>) : ParseResult =
-        buffer,
-        MetadataBlockHeader
-            { Length = 0u
-              BlockType = BlockType.Invalid
-              LastBlock = false }
+    let parse (buffer: ReadOnlySequence<byte>) state =
+        match state with
+        | Initial -> Ok(FlacValue.Magic, Magic)
+        | _ -> Error "Unsupported state"
+        |> ValueResult.map (fun (value, state) -> (buffer, value, state))
 
 type Flac =
-    static member Read(reader: PipeReader, handle: Handle, cancellationToken) = async {
-        let mutable completed = false
+    static member Read(reader: PipeReader, handle: Handle, ?cancellationToken) =
+        let token = defaultArg cancellationToken CancellationToken.None
 
-        while not completed do
-            let! result = reader.ReadAsync(cancellationToken) |> _.AsTask() |> Async.AwaitTask
-            let struct (buffer, value) = Flac.parse result.Buffer
-            do! handle value
-            reader.AdvanceTo(buffer.Start, buffer.End)
-            completed <- result.IsCompleted
-    }
+        let rec read state = async {
+            let! result = reader.ReadAsync(token) |> _.AsTask() |> Async.AwaitTask
+
+            if result.IsCompleted then
+                return state
+            else
+                let struct (buffer, value, newState) = Flac.parse result.Buffer state
+                do! handle value // TODO: Does this need to be async?
+                reader.AdvanceTo(buffer.Start, buffer.End)
+                return! read newState
+        }
+
+        read Initial
