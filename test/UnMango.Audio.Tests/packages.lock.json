@@ -10,9 +10,9 @@
       },
       "FSharp.Core": {
         "type": "Direct",
-        "requested": "[8.0.200, )",
-        "resolved": "8.0.200",
-        "contentHash": "qnxoF3Fu0HzfOeYdrwmQOsLP1v+OtOMSIYkNVUwf6nGqWzL03Hh4r6VFCvCb54jlsgtt3WADVYkKkrgdeY5kiQ=="
+        "requested": "[8.0.400, )",
+        "resolved": "8.0.400",
+        "contentHash": "kHMdDDmlZl98tujgHCmL8/HNH9VKbxsRMC9s7wbwr4noR40SSa5D4d00yF8cMK52s8jabVuiLLcrUw9r+PkKDQ=="
       },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
@@ -26,11 +26,11 @@
       },
       "Unquote": {
         "type": "Direct",
-        "requested": "[6.1.0, )",
-        "resolved": "6.1.0",
-        "contentHash": "eWcVdoxGSRqmvRr6RUN4ko73nLxiY1yhZXdqlriEucAqylcPQc/RCZDobJSnE858MA8SHXwBOX79RQuYp8Z3Cw==",
+        "requested": "[7.0.0, )",
+        "resolved": "7.0.0",
+        "contentHash": "KRcPaRnqd/RhCBy6GksG5OZYwa4XLK0fHYOYL/UoCiRkvi7v8gYgEx1i7CliPtKstdu8m3Ijy5KP+MnIoMO+kg==",
         "dependencies": {
-          "FSharp.Core": "4.7.2"
+          "FSharp.Core": "8.0.100"
         }
       },
       "xunit": {
@@ -1034,7 +1034,7 @@
       "unmango.audio": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[8.0.200, )"
+          "FSharp.Core": "[8.0.400, )"
         }
       }
     }
