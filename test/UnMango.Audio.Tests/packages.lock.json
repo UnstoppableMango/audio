@@ -10,18 +10,17 @@
       },
       "FSharp.Core": {
         "type": "Direct",
-        "requested": "[8.0.200, )",
-        "resolved": "8.0.200",
-        "contentHash": "qnxoF3Fu0HzfOeYdrwmQOsLP1v+OtOMSIYkNVUwf6nGqWzL03Hh4r6VFCvCb54jlsgtt3WADVYkKkrgdeY5kiQ=="
+        "requested": "[8.0.300, )",
+        "resolved": "8.0.300",
+        "contentHash": "Jv44fV7TNglyMku89lQcA4Q6mFKLyHb2bs1Yb72nvSVc+cHplEnoZ4XQUaaTLJGUTx/iMqcrkYGtaLzkkIhpaA=="
       },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
-        "requested": "[17.7.2, )",
-        "resolved": "17.7.2",
-        "contentHash": "WOSF/GUYcnrLGkdvCbXDRig2rShtBwfQc5l7IxQE6PZI3CeXAqF1SpyzwlGA5vw+MdEAXs3niy+ZkGBBWna6tw==",
+        "requested": "[18.0.1, )",
+        "resolved": "18.0.1",
+        "contentHash": "WNpu6vI2rA0pXY4r7NKxCN16XRWl5uHu6qjuyVLoDo6oYEggIQefrMjkRuibQHm/NslIUNCcKftvoWAN80MSAg==",
         "dependencies": {
-          "Microsoft.CodeCoverage": "17.7.2",
-          "Microsoft.TestPlatform.TestHost": "17.7.2"
+          "Microsoft.CodeCoverage": "18.0.1"
         }
       },
       "Unquote": {
@@ -52,8 +51,8 @@
       },
       "Microsoft.CodeCoverage": {
         "type": "Transitive",
-        "resolved": "17.7.2",
-        "contentHash": "ntbkwIqwszkfCRjxVZOyEQiHauiYsY9NtYjw9ASsoxDSiG8YtV6AGcOAwrAk3TZv2UOq4MrpX+3MYEeMHSb03w=="
+        "resolved": "18.0.1",
+        "contentHash": "O+utSr97NAJowIQT/OVp3Lh9QgW/wALVTP4RG1m2AfFP4IyJmJz0ZBmFJUsRQiAPgq6IRC0t8AAzsiPIsaUDEA=="
       },
       "Microsoft.NETCore.Platforms": {
         "type": "Transitive",
@@ -64,24 +63,6 @@
         "type": "Transitive",
         "resolved": "1.1.0",
         "contentHash": "aOZA3BWfz9RXjpzt0sRJJMjAscAUm3Hoa4UWAfceV9UTYxgwZ1lZt5nO2myFf+/jetYQo4uTP7zS8sJY67BBxg=="
-      },
-      "Microsoft.TestPlatform.ObjectModel": {
-        "type": "Transitive",
-        "resolved": "17.7.2",
-        "contentHash": "aHzQWgDMVBnk39HhQVmn06w+YxzF1h2V5/M4WgrNQAn7q97GR4Si3vLRTDlmJo9nK/Nknce+H4tXx4gqOKyLeg==",
-        "dependencies": {
-          "NuGet.Frameworks": "6.5.0",
-          "System.Reflection.Metadata": "1.6.0"
-        }
-      },
-      "Microsoft.TestPlatform.TestHost": {
-        "type": "Transitive",
-        "resolved": "17.7.2",
-        "contentHash": "pv9yVD7IKPLJV28zYjLsWFiM3j506I2ye+6NquG8vsbm/gR7lgyig8IgY6Vo57VMvGaAKwtUECzcj+C5tH271Q==",
-        "dependencies": {
-          "Microsoft.TestPlatform.ObjectModel": "17.7.2",
-          "Newtonsoft.Json": "13.0.1"
-        }
       },
       "Microsoft.Win32.Primitives": {
         "type": "Transitive",
@@ -143,16 +124,6 @@
           "System.Xml.ReaderWriter": "4.3.0",
           "System.Xml.XDocument": "4.3.0"
         }
-      },
-      "Newtonsoft.Json": {
-        "type": "Transitive",
-        "resolved": "13.0.1",
-        "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
-      },
-      "NuGet.Frameworks": {
-        "type": "Transitive",
-        "resolved": "6.5.0",
-        "contentHash": "QWINE2x3MbTODsWT1Gh71GaGb5icBz4chS8VYvTgsBnsi8esgN6wtHhydd7fvToWECYGq7T4cgBBDiKD/363fg=="
       },
       "runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
         "type": "Transitive",
@@ -630,11 +601,6 @@
           "System.Runtime": "4.3.0"
         }
       },
-      "System.Reflection.Metadata": {
-        "type": "Transitive",
-        "resolved": "1.6.0",
-        "contentHash": "COC1aiAJjCoA5GBF+QKL2uLqEBew4JsCkQmoHKbN3TlOZKa2fKLz5CpiRQKDz0RsAOEGsVKqOD5bomsXq/4STQ=="
-      },
       "System.Reflection.Primitives": {
         "type": "Transitive",
         "resolved": "4.3.0",
@@ -1034,7 +1000,7 @@
       "unmango.audio": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[8.0.200, )"
+          "FSharp.Core": "[8.0.300, )"
         }
       }
     }
