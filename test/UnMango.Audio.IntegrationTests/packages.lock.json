@@ -31,14 +31,17 @@
       },
       "xunit.runner.visualstudio": {
         "type": "Direct",
-        "requested": "[2.5.3, )",
-        "resolved": "2.5.3",
-        "contentHash": "HFFL6O+QLEOfs555SqHii48ovVa4CqGYanY+B32BjLpPptdE+wEJmCFNXlLHdEOD5LYeayb9EroaUpydGpcybg=="
+        "requested": "[3.1.5, )",
+        "resolved": "3.1.5",
+        "contentHash": "tKi7dSTwP4m5m9eXPM2Ime4Kn7xNf4x4zT9sdLO/G4hZVnQCRiMTWoSZqI/pYTVeI27oPPqHBKYI/DjJ9GsYgA==",
+        "dependencies": {
+          "Microsoft.TestPlatform.ObjectModel": "17.13.0"
+        }
       },
       "FSharp.Core": {
         "type": "Transitive",
-        "resolved": "8.0.200",
-        "contentHash": "qnxoF3Fu0HzfOeYdrwmQOsLP1v+OtOMSIYkNVUwf6nGqWzL03Hh4r6VFCvCb54jlsgtt3WADVYkKkrgdeY5kiQ=="
+        "resolved": "8.0.300",
+        "contentHash": "Jv44fV7TNglyMku89lQcA4Q6mFKLyHb2bs1Yb72nvSVc+cHplEnoZ4XQUaaTLJGUTx/iMqcrkYGtaLzkkIhpaA=="
       },
       "Microsoft.CodeCoverage": {
         "type": "Transitive",
@@ -57,10 +60,9 @@
       },
       "Microsoft.TestPlatform.ObjectModel": {
         "type": "Transitive",
-        "resolved": "17.7.2",
-        "contentHash": "aHzQWgDMVBnk39HhQVmn06w+YxzF1h2V5/M4WgrNQAn7q97GR4Si3vLRTDlmJo9nK/Nknce+H4tXx4gqOKyLeg==",
+        "resolved": "17.13.0",
+        "contentHash": "bt0E0Dx+iqW97o4A59RCmUmz/5NarJ7LRL+jXbSHod72ibL5XdNm1Ke+UO5tFhBG4VwHLcSjqq9BUSblGNWamw==",
         "dependencies": {
-          "NuGet.Frameworks": "6.5.0",
           "System.Reflection.Metadata": "1.6.0"
         }
       },
@@ -138,11 +140,6 @@
         "type": "Transitive",
         "resolved": "13.0.1",
         "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
-      },
-      "NuGet.Frameworks": {
-        "type": "Transitive",
-        "resolved": "6.5.0",
-        "contentHash": "QWINE2x3MbTODsWT1Gh71GaGb5icBz4chS8VYvTgsBnsi8esgN6wtHhydd7fvToWECYGq7T4cgBBDiKD/363fg=="
       },
       "runtime.debian.8-x64.runtime.native.System.Security.Cryptography.OpenSsl": {
         "type": "Transitive",
@@ -1024,7 +1021,7 @@
       "unmango.audio": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[8.0.200, )"
+          "FSharp.Core": "[8.0.300, )"
         }
       }
     }
