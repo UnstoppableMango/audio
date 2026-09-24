@@ -1,5 +1,7 @@
 # UnMango .NET Audio Metadata Library
 
+[![Hercules CI](https://hercules-ci.com/api/v1/site/github/account/UnstoppableMango/project/audio/badge)](https://hercules-ci.com/github/UnstoppableMango/audio)
+
 A .NET library for parsing audio metadata. Written in F#, but intended to be used by either F# or C#.
 
 The primary package is `UnMango.Audio` which will contain all of the metadata functionality.
