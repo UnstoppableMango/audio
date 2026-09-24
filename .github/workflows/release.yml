@@ -47,7 +47,7 @@ jobs:
             --results-directory "./coverage" \
             --verbosity normal
 
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v7
         with:
           directory: coverage
           files: '**/coverage.cobertura.xml'
